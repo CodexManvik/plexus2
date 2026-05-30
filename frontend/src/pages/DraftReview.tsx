@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
+import PDFViewer from '../components/pdf/PDFViewer';
 
 interface Grounding {
   page_number: number;
@@ -34,10 +35,65 @@ export default function DraftReview() {
   const [saveStatus, setSaveStatus] = useState<string>('All changes saved');
 
   // Ref container for scrolling left and right panes
-  const pdfPaneRef = useRef<HTMLDivElement>(null);
   const tablePaneRef = useRef<HTMLDivElement>(null);
   const paramRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
-  const citationRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+
+  // Track current scroll offset of the right pane for session persistence
+  const scrollPositionRef = useRef<number>(0);
+
+  // ── Session helpers ────────────────────────────────────────────────────────
+
+  const saveSession = useCallback(async (lastParamId: string | null) => {
+    if (!contractId) return;
+    try {
+      await api.post(`/review/${contractId}/session/save`, {
+        last_param_id:   lastParamId,
+        scroll_position: scrollPositionRef.current,
+      });
+    } catch {
+      // Session save is best-effort — never surface this as an error
+    }
+  }, [contractId]);
+
+  // Restore session on mount
+  useEffect(() => {
+    if (!contractId) return;
+    (async () => {
+      try {
+        const { data } = await api.get(`/review/${contractId}/session/restore`);
+        if (!data.first_visit && data.session?.last_param_id) {
+          const lastId = data.session.last_param_id;
+          setActiveParamId(lastId);
+          // Wait for DOM to be populated, then scroll to the last param row
+          setTimeout(() => {
+            const rowEl = paramRefs.current[lastId];
+            if (rowEl) {
+              rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            // Restore right-pane scroll position
+            if (tablePaneRef.current && data.session.scroll_position > 0) {
+              tablePaneRef.current.scrollTop = data.session.scroll_position;
+            }
+          }, 400);
+        }
+      } catch {
+        // No session — first visit, nothing to restore
+      }
+    })();
+  }, [contractId]);
+
+  // Auto-save session every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      saveSession(activeParamId);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [activeParamId, saveSession]);
+
+  // Track scroll position in the right pane
+  const handleTableScroll = useCallback(() => {
+    scrollPositionRef.current = tablePaneRef.current?.scrollTop ?? 0;
+  }, []);
 
   // Fetch contract details
   const { data: contractData } = useQuery({
@@ -71,9 +127,11 @@ export default function DraftReview() {
       });
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       setSaveStatus('All changes saved');
       queryClient.invalidateQueries({ queryKey: ['contract-parameters', contractId] });
+      // Save session after every action
+      saveSession(variables.paramId);
     },
     onError: () => {
       setSaveStatus('Error saving changes');
@@ -109,177 +167,6 @@ export default function DraftReview() {
     });
   };
 
-  // Bidirectional highlighting orchestrator
-  const highlightCitation = (paramId: string) => {
-    setActiveParamId(paramId);
-    
-    // Scroll left pane (mock PDF) to the highlighted citation span
-    const citationEl = citationRefs.current[paramId];
-    if (citationEl) {
-      citationEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    // Scroll right pane (parameters table) to the matching table row
-    const rowEl = paramRefs.current[paramId];
-    if (rowEl) {
-      rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
-  // Construct mock PDF pages with citation hooks based on dynamic parameters
-  const renderMockPDF = () => {
-    if (parameters.length === 0) {
-      return (
-        <div className="w-full bg-white p-xl min-h-[800px] pdf-page-shadow relative font-serif text-[14px] leading-relaxed text-slate-800 flex items-center justify-center">
-          Document parsing preview not available.
-        </div>
-      );
-    }
-
-    return (
-      <div className="w-[640px] bg-white p-xl min-h-[1000px] pdf-page-shadow relative font-serif text-[14px] leading-relaxed text-slate-800">
-        <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 px-2 py-1 rounded">
-          <span className="text-[10px] font-bold text-primary uppercase font-sans">OCI OCR VERIFIED</span>
-        </div>
-        
-        <h2 className="text-center font-bold mb-xl text-lg uppercase tracking-widest text-black border-b pb-sm font-headline">
-          {contractData?.filename?.split('.')[0]?.replaceAll('_', ' ') || 'Master Services Agreement'}
-        </h2>
-
-        <div className="space-y-md">
-          <p>
-            This {contractData?.agreement_type || 'Master Services Agreement'} is entered into and made effective as of{' '}
-            {/* Effective Date Citation */}
-            {(() => {
-              const p = parameters.find(x => x.parameter_name === 'Effective Date');
-              if (p) {
-                return (
-                  <span 
-                    ref={el => citationRefs.current[p.param_id] = el}
-                    onClick={() => highlightCitation(p.param_id)}
-                    className={`citation-highlight cursor-pointer px-1 rounded transition-all font-sans font-bold ${activeParamId === p.param_id ? 'active-citation' : ''}`}
-                  >
-                    {p.edited_value || p.extracted_value || p.supporting_text || 'January 15, 2024'}
-                  </span>
-                );
-              }
-              return <span className="underline">January 15, 2024</span>;
-            })()}
-            , by and between{' '}
-            {/* Parties Citation */}
-            {(() => {
-              const p = parameters.find(x => x.parameter_name === 'Counterparty Name');
-              if (p) {
-                return (
-                  <span 
-                    ref={el => citationRefs.current[p.param_id] = el}
-                    onClick={() => highlightCitation(p.param_id)}
-                    className={`citation-highlight cursor-pointer px-1 rounded transition-all font-sans font-bold ${activeParamId === p.param_id ? 'active-citation' : ''}`}
-                  >
-                    {p.edited_value || p.extracted_value || p.supporting_text || 'LexGlobal Logistics Corp'}
-                  </span>
-                );
-              }
-              return <span className="underline">LexGlobal Logistics Corp.</span>;
-            })()}
-            {' '}and Enterprise Flow Inc.
-          </p>
-
-          <h3 className="font-bold mt-lg mb-xs border-b border-slate-200 uppercase font-headline">Section 1. Scope and Payments</h3>
-          <p>
-            The Service Provider shall deliver supply chain logistics as agreed in Exhibit A. All invoices under this arrangement shall be settled within{' '}
-            {/* Payment Terms Citation */}
-            {(() => {
-              const p = parameters.find(x => x.parameter_name === 'Payment Terms');
-              if (p) {
-                return (
-                  <span 
-                    ref={el => citationRefs.current[p.param_id] = el}
-                    onClick={() => highlightCitation(p.param_id)}
-                    className={`citation-highlight cursor-pointer px-1 rounded transition-all font-sans font-bold ${activeParamId === p.param_id ? 'active-citation' : ''}`}
-                  >
-                    {p.edited_value || p.extracted_value || p.supporting_text || 'sixty (60) days'}
-                  </span>
-                );
-              }
-              return <span className="underline">sixty (60) days</span>;
-            })()}
-            {' '}of invoice presentation.
-          </p>
-
-          <h3 className="font-bold mt-lg mb-xs border-b border-slate-200 uppercase font-headline">Section 4. Liability and Damages</h3>
-          <p>
-            Except in cases of gross negligence, the total aggregate liability of the contractor under this service contract shall not exceed{' '}
-            {/* Liability Cap Citation */}
-            {(() => {
-              const p = parameters.find(x => x.parameter_name === 'Liability Cap');
-              if (p) {
-                return (
-                  <span 
-                    ref={el => citationRefs.current[p.param_id] = el}
-                    onClick={() => highlightCitation(p.param_id)}
-                    className={`citation-highlight cursor-pointer px-1 rounded transition-all font-sans font-bold ${activeParamId === p.param_id ? 'active-citation' : ''}`}
-                  >
-                    {p.edited_value || p.extracted_value || p.supporting_text || 'USD 5,000,000.00'}
-                  </span>
-                );
-              }
-              return <span className="underline">USD 5,000,000.00</span>;
-            })()}
-            {' '}for any single event.
-          </p>
-
-          <h3 className="font-bold mt-lg mb-xs border-b border-slate-200 uppercase font-headline">Section 12. Term and Termination</h3>
-          <p>
-            This agreement may be terminated for convenience by either party upon{' '}
-            {/* Termination Notice Citation */}
-            {(() => {
-              const p = parameters.find(x => x.parameter_name === 'Termination Notice');
-              if (p) {
-                return (
-                  <span 
-                    ref={el => citationRefs.current[p.param_id] = el}
-                    onClick={() => highlightCitation(p.param_id)}
-                    className={`citation-highlight cursor-pointer px-1 rounded transition-all font-sans font-bold ${activeParamId === p.param_id ? 'active-citation' : ''}`}
-                  >
-                    {p.edited_value || p.extracted_value || p.supporting_text || '90 days prior written notice'}
-                  </span>
-                );
-              }
-              return <span className="underline">90 days prior written notice</span>;
-            })()}
-            {' '}to the other. In event of breach, the cure period is 15 days.
-          </p>
-
-          <h3 className="font-bold mt-lg mb-xs border-b border-slate-200 uppercase font-headline">Section 15. Compliance and Law</h3>
-          <p>
-            Governing law of this contract, including any disputes or litigation resulting from execution, shall be resolved according to the laws of{' '}
-            {/* Governing Law Citation */}
-            {(() => {
-              const p = parameters.find(x => x.parameter_name === 'Governing Law');
-              if (p) {
-                return (
-                  <span 
-                    ref={el => citationRefs.current[p.param_id] = el}
-                    onClick={() => highlightCitation(p.param_id)}
-                    className={`citation-highlight cursor-pointer px-1 rounded transition-all font-sans font-bold ${activeParamId === p.param_id ? 'active-citation' : ''}`}
-                  >
-                    {p.edited_value || p.extracted_value || p.supporting_text || 'the State of Delaware, USA'}
-                  </span>
-                );
-              }
-              return <span className="underline">the State of Delaware, USA</span>;
-            })()}
-            .
-          </p>
-          
-          <div className="mt-xl h-40 bg-slate-50 border border-dashed border-slate-200 rounded flex items-center justify-center text-slate-400 italic font-sans">
-            OCR rendering Page 1 of {contractData?.page_count || 1} complete.
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <main className="flex-1 flex overflow-hidden min-h-[calc(100vh-3.5rem)]">
@@ -289,29 +176,24 @@ export default function DraftReview() {
         {/* PDF Header Sub-nav */}
         <div className="h-10 border-b border-outline-variant bg-surface flex items-center justify-between px-md shrink-0">
           <div className="flex items-center gap-sm">
-            <span className="font-label-md text-label-md text-primary font-bold">
+            <span className="font-label-md text-label-md text-primary font-bold truncate max-w-[220px]">
               {contractData?.filename || 'contract_preview.pdf'}
             </span>
             <span className="bg-surface-container-highest text-on-surface-variant px-xs rounded text-[10px] uppercase font-bold tracking-wider">
               OCR Grounded
             </span>
           </div>
-          <div className="flex items-center gap-md">
-            <span className="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer">zoom_out</span>
-            <span className="font-label-md text-label-md font-bold">100%</span>
-            <span className="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer">zoom_in</span>
-            <div className="w-[1px] h-4 bg-outline-variant"></div>
-            <span className="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer">print</span>
-          </div>
+          <span className="text-[11px] font-bold text-slate-400 font-mono">PDF.JS INTEGRATION</span>
         </div>
         
-        {/* PDF View Container */}
-        <div 
-          ref={pdfPaneRef}
-          className="flex-1 overflow-y-auto p-xl flex flex-col items-center gap-lg bg-surface-dim custom-scrollbar"
-        >
-          {renderMockPDF()}
-        </div>
+        {contractId && (
+          <PDFViewer
+            contractId={contractId}
+            activeParamId={activeParamId}
+            parameters={parameters}
+            onParamClick={setActiveParamId}
+          />
+        )}
       </section>
 
       {/* Right Pane: Extracted Metadata Verification Table */}
@@ -330,8 +212,9 @@ export default function DraftReview() {
         </div>
 
         {/* Table List Scroll Area */}
-        <div 
+        <div
           ref={tablePaneRef}
+          onScroll={handleTableScroll}
           className="flex-1 overflow-auto custom-scrollbar"
         >
           {isLoading ? (

@@ -12,6 +12,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Whitelist of columns that tag suggestions are permitted to update.
+# Any field_name stored in draft_tag_suggestions that is NOT in this set
+# will be rejected — prevents stored SQL injection via adversarial extraction output.
+ALLOWED_TAG_FIELDS: frozenset = frozenset({
+    'contract_type',
+    'agreement_type',
+    'department',
+    'customer_name',
+})
+
 
 class TagSuggestionService:
     """Manages tag suggestions for contracts."""
@@ -155,7 +165,16 @@ class TagSuggestionService:
                     return
                 
                 field_name, suggested_value = row
-                
+
+                # Whitelist check — field_name comes from the database and must
+                # be constrained before being interpolated into the UPDATE query.
+                if field_name not in ALLOWED_TAG_FIELDS:
+                    logger.warning(
+                        f"Rejected accept_suggestion: field_name '{field_name}' not in ALLOWED_TAG_FIELDS "
+                        f"(suggestion_id={suggestion_id}, contract_id={contract_id})"
+                    )
+                    raise ValueError(f"Forbidden field_name: {field_name}")
+
                 # Mark as accepted
                 update_suggestion = """
                     UPDATE draft_tag_suggestions
@@ -163,8 +182,8 @@ class TagSuggestionService:
                     WHERE suggestion_id = :suggestion_id
                 """
                 await cursor.execute(update_suggestion, {'suggestion_id': suggestion_id})
-                
-                # Update contract
+
+                # field_name is whitelisted — interpolation is safe here
                 update_contract = f"""
                     UPDATE contracts
                     SET {field_name} = :value
@@ -174,5 +193,5 @@ class TagSuggestionService:
                     'value': suggested_value,
                     'contract_id': contract_id
                 })
-                
+
                 await conn.commit()

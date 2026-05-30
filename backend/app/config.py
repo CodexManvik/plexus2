@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     backend_url: str = Field(default='http://localhost:8000', env='BACKEND_URL')
     frontend_url: str = Field(default='http://localhost:3000', env='FRONTEND_URL')
     environment: str = Field(default='development', env='ENVIRONMENT')
+    seed_admin: bool = Field(default=False, env='SEED_ADMIN')
     
     @validator('jwt_secret_key')
     def validate_jwt_secret(cls, v):

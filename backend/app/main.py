@@ -12,6 +12,8 @@ import sys
 
 from .config import settings
 from .database import db_pool
+from .auth.service import AuthService
+from .auth.models import UserCreate, UserRole
 
 # Import routers
 from .auth.router import router as auth_router
@@ -22,6 +24,8 @@ from .routers.review import router as review_router
 from .routers.approval import router as approval_router
 from .routers.assistant import router as assistant_router
 from .routers.audit import router as audit_router
+from .routers.admin import router as admin_router
+from .routers.websocket import router as ws_router
 
 # Configure logging
 logging.basicConfig(
@@ -35,21 +39,73 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# Fixed UUID for the seeded dev admin — must match all existing references
+_DEV_ADMIN_UUID = '89BF383A5F3548AC98108947D04C2B43'
+
+
+async def seed_admin_user() -> None:
+    """
+    Upsert the dev admin user using MERGE INTO.
+    Only called when SEED_ADMIN=true in .env.
+    The UUID is stable so FK constraints in audit_log resolve correctly.
+    """
+    from .database import db_pool
+
+    password_hash = AuthService.hash_password('Admin@Plexus1')
+
+    # RAW(16) literals in Oracle must be supplied as HEXTORAW(:hex_value)
+    merge_sql = """
+        MERGE INTO users tgt
+        USING (
+            SELECT HEXTORAW(:user_id) AS user_id FROM DUAL
+        ) src ON (tgt.user_id = src.user_id)
+        WHEN NOT MATCHED THEN
+            INSERT (user_id, email, password_hash, full_name, role, is_active)
+            VALUES (HEXTORAW(:user_id), :email, :password_hash, :full_name, :role, 1)
+        WHEN MATCHED THEN
+            UPDATE SET
+                password_hash = :password_hash,
+                full_name     = :full_name,
+                role          = :role,
+                is_active     = 1
+    """
+
+    async with db_pool.get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(merge_sql, {
+                'user_id':       _DEV_ADMIN_UUID,
+                'email':         'admin@plexus.com',
+                'password_hash': password_hash,
+                'full_name':     'System Administrator',
+                'role':          'admin',
+            })
+            await conn.commit()
+
+    logger.info("✓ Dev admin user seeded (admin@plexus.com / Admin@Plexus1)")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown."""
     # Startup
-    logger.info("🚀 Starting Plexus backend...")
+    logger.info("Starting Plexus backend...")
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Backend URL: {settings.backend_url}")
-    
+
     try:
         await db_pool.initialize()
         logger.info("✓ Database connection pool initialized")
     except Exception as e:
-        logger.error(f"❌ Failed to initialize database: {e}")
+        logger.error(f"Failed to initialize database: {e}")
         raise
-    
+
+    if settings.seed_admin:
+        try:
+            await seed_admin_user()
+        except Exception as e:
+            logger.error(f"Admin seed failed: {e}")
+            raise
+
     logger.info("✓ Plexus backend started successfully")
     
     yield
@@ -126,6 +182,8 @@ app.include_router(review_router)
 app.include_router(approval_router)
 app.include_router(assistant_router)
 app.include_router(audit_router)
+app.include_router(admin_router)
+app.include_router(ws_router)
 
 
 if __name__ == "__main__":

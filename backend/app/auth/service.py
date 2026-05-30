@@ -88,48 +88,49 @@ class AuthService:
     async def create_user(user_data: UserCreate) -> dict:
         """
         Create new user in database.
+        Uses INSERT then SELECT — oracledb async does not support cursor.var()
+        the same way as cx_Oracle. RETURNING INTO is avoided deliberately.
         Returns user record dict.
         """
         user_id = uuid.uuid4().hex.upper()
         password_hash = AuthService.hash_password(user_data.password)
-        
-        query = """
+
+        insert_query = """
             INSERT INTO users (user_id, email, password_hash, full_name, role, is_active)
-            VALUES (:user_id, :email, :password_hash, :full_name, :role, 1)
-            RETURNING user_id, email, full_name, role, is_active, created_at, updated_at INTO 
-            :out_user_id, :out_email, :out_full_name, :out_role, :out_is_active, :out_created_at, :out_updated_at
+            VALUES (HEXTORAW(:user_id), :email, :password_hash, :full_name, :role, 1)
         """
-        
+
+        select_query = """
+            SELECT user_id, email, full_name, role, is_active, created_at, updated_at
+            FROM users
+            WHERE user_id = HEXTORAW(:user_id)
+        """
+
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
-                out_vars = {
-                    'out_user_id': cursor.var(str),
-                    'out_email': cursor.var(str),
-                    'out_full_name': cursor.var(str),
-                    'out_role': cursor.var(str),
-                    'out_is_active': cursor.var(int),
-                    'out_created_at': cursor.var(datetime),
-                    'out_updated_at': cursor.var(datetime)
-                }
-                
-                await cursor.execute(query, {
-                    'user_id': user_id,
-                    'email': user_data.email,
+                await cursor.execute(insert_query, {
+                    'user_id':       user_id,
+                    'email':         user_data.email,
                     'password_hash': password_hash,
-                    'full_name': user_data.full_name,
-                    'role': user_data.role.value,
-                    **out_vars
+                    'full_name':     user_data.full_name,
+                    'role':          user_data.role.value,
                 })
                 await conn.commit()
-                
+
+                await cursor.execute(select_query, {'user_id': user_id})
+                row = await cursor.fetchone()
+
+                if not row:
+                    raise RuntimeError(f"User insert succeeded but SELECT returned nothing for user_id={user_id}")
+
                 return {
-                    'user_id': out_vars['out_user_id'].getvalue()[0],
-                    'email': out_vars['out_email'].getvalue()[0],
-                    'full_name': out_vars['out_full_name'].getvalue()[0],
-                    'role': out_vars['out_role'].getvalue()[0],
-                    'is_active': bool(out_vars['out_is_active'].getvalue()[0]),
-                    'created_at': out_vars['out_created_at'].getvalue()[0],
-                    'updated_at': out_vars['out_updated_at'].getvalue()[0]
+                    'user_id':    row[0],
+                    'email':      row[1],
+                    'full_name':  row[2],
+                    'role':       row[3],
+                    'is_active':  bool(row[4]),
+                    'created_at': row[5],
+                    'updated_at': row[6],
                 }
     
     @staticmethod

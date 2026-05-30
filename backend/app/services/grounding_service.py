@@ -6,7 +6,7 @@ Phase 3 implementation.
 
 from typing import Optional, Tuple
 from ..database import db_pool
-from ..utils.text_utils import normalize_text, fuzzy_match_score
+from ..utils.text_utils import normalize_text, fuzzy_match_score, jaccard_similarity
 from ..agents.grounding_agent import GroundingAgent
 import logging
 
@@ -55,34 +55,42 @@ class GroundingService:
             return await GroundingService._save_grounding(
                 param_id, block, matched_text, 1.0, method
             )
-        
-        # Stage 2: Normalized match
+
+        # Stage 2: Normalized match (case+whitespace insensitive, punctuation stripped)
         result = GroundingService._normalized_match(supporting_text, blocks)
         if result:
             block, matched_text, method = result
             return await GroundingService._save_grounding(
                 param_id, block, matched_text, 0.95, method
             )
-        
-        # Stage 3: Fuzzy match
+
+        # Stage 3: Jaccard token-overlap (robust against OCR normalization and
+        # partial LLM quotes — checks word-set overlap rather than char sequences)
+        result = GroundingService._jaccard_match(supporting_text, blocks)
+        if result:
+            block, matched_text, method, score = result
+            return await GroundingService._save_grounding(
+                param_id, block, matched_text, score, method
+            )
+
+        # Stage 4: SequenceMatcher fuzzy (char-level, threshold 0.65)
         result = GroundingService._fuzzy_match(supporting_text, blocks)
         if result:
             block, matched_text, method, score = result
             return await GroundingService._save_grounding(
                 param_id, block, matched_text, score, method
             )
-        
-        # Stage 4: LLM alignment
+
+        # Stage 5: LLM alignment (expensive — last resort)
         result = GroundingAgent.align_evidence(extracted_value, supporting_text, blocks)
         if result:
             block_id, matched_text, confidence = result
-            block = next((b for b in blocks if b['block_id'] == block_id), None)
+            block = next((b for b in blocks if b["block_id"] == block_id), None)
             if block:
                 return await GroundingService._save_grounding(
-                    param_id, block, matched_text, confidence, 'LLM_ALIGNED'
+                    param_id, block, matched_text, confidence, "LLM_ALIGNED"
                 )
-        
-        # All stages failed - mark as UNGROUNDED
+
         logger.warning(f"Failed to ground parameter {param_id}")
         return None
     
@@ -115,8 +123,42 @@ class GroundingService:
         return None
     
     @staticmethod
-    def _fuzzy_match(supporting_text: str, blocks: list, threshold: float = 0.85) -> Optional[Tuple]:
-        """Stage 3: Fuzzy match with similarity threshold."""
+    def _jaccard_match(supporting_text: str, blocks: list, threshold: float = 0.50) -> Optional[Tuple]:
+        """
+        Stage 3: Jaccard token-overlap match.
+
+        More forgiving than SequenceMatcher for:
+        - Partial quotes (the LLM gives a subset of the block's words)
+        - OCR normalization differences (dashes, ligatures, spacing)
+
+        Threshold 0.50 means at least half of the supporting text's unique
+        words must appear in the block.
+        """
+        if not supporting_text:
+            return None
+
+        best_match = None
+        best_score = 0.0
+
+        for block in blocks:
+            raw_text = str(block.get("raw_text", ""))
+            score = jaccard_similarity(supporting_text, raw_text)
+            if score > best_score and score >= threshold:
+                best_score = score
+                best_match = (block, raw_text[:len(supporting_text) + 50], "JACCARD", score)
+
+        return best_match
+
+    @staticmethod
+    def _fuzzy_match(supporting_text: str, blocks: list, threshold: float = 0.65) -> Optional[Tuple]:
+        """
+        Stage 4: SequenceMatcher character-level fuzzy match.
+
+        Threshold lowered from 0.85 to 0.65: LLM supporting text is almost
+        always a paraphrase or partial quote and rarely exceeds 0.85 against
+        the raw block. 0.65 catches the clear hits while avoiding noise.
+        Both texts are normalized before comparison.
+        """
         if not supporting_text:
             return None
         
@@ -180,40 +222,48 @@ class GroundingService:
         confidence: float,
         match_method: str
     ) -> str:
-        """Save grounding record to database."""
+        """
+        Save grounding record to database.
+        grounding_id is generated in Python before the INSERT so it can be
+        returned immediately — avoids the stale-fetchone bug caused by doing
+        a post-INSERT SELECT on param_id, which may match earlier records.
+        """
+        import uuid as _uuid
+        grounding_id = _uuid.uuid4().hex.upper()
+
+        # Map JACCARD to FUZZY to respect the database check constraint
+        db_match_method = match_method
+        if db_match_method == 'JACCARD':
+            db_match_method = 'FUZZY'
+
         query = """
             INSERT INTO draft_grounding_records (
-                param_id, block_id, page_number,
+                grounding_id, param_id, block_id, page_number,
                 bbox_x1, bbox_y1, bbox_x2, bbox_y2,
                 source_text, grounding_confidence, match_method
             ) VALUES (
-                :param_id, :block_id, :page_number,
+                HEXTORAW(:grounding_id), HEXTORAW(:param_id),
+                HEXTORAW(:block_id), :page_number,
                 :bbox_x1, :bbox_y1, :bbox_x2, :bbox_y2,
                 :source_text, :grounding_confidence, :match_method
             )
         """
-        
+
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
-                # Get the grounding_id that will be generated
                 await cursor.execute(query, {
-                    'param_id': param_id,
-                    'block_id': block['block_id'],
-                    'page_number': block['page_number'],
-                    'bbox_x1': block['bbox_x1'],
-                    'bbox_y1': block['bbox_y1'],
-                    'bbox_x2': block['bbox_x2'],
-                    'bbox_y2': block['bbox_y2'],
-                    'source_text': source_text[:4000],  # Limit length
+                    'grounding_id':        grounding_id,
+                    'param_id':            param_id,
+                    'block_id':            block['block_id'],
+                    'page_number':         block['page_number'],
+                    'bbox_x1':             block['bbox_x1'],
+                    'bbox_y1':             block['bbox_y1'],
+                    'bbox_x2':             block['bbox_x2'],
+                    'bbox_y2':             block['bbox_y2'],
+                    'source_text':         source_text[:4000],
                     'grounding_confidence': confidence,
-                    'match_method': match_method
+                    'match_method':        db_match_method,
                 })
                 await conn.commit()
-                
-                # Get the generated grounding_id
-                await cursor.execute(
-                    "SELECT grounding_id FROM draft_grounding_records WHERE param_id = :param_id",
-                    {'param_id': param_id}
-                )
-                row = await cursor.fetchone()
-                return row[0] if row else None
+
+        return grounding_id

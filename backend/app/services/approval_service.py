@@ -7,6 +7,7 @@ from typing import Optional
 from ..database import db_pool
 from ..services.workflow_service import WorkflowService
 from ..services.audit_service import AuditService
+from ..services.embedding_service import EmbeddingService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -59,12 +60,25 @@ class ApprovalService:
                     'comments': comments
                 }
             )
-            
+
+            # Generate Cohere embeddings for vector search.
+            # Non-fatal: embedding failure must not roll back an approved contract.
+            try:
+                embedding_count = await EmbeddingService.generate_published_embeddings(contract_id)
+                logger.info(f"Embeddings generated post-approval: {embedding_count} vectors")
+            except Exception as embed_exc:
+                logger.error(
+                    f"Embedding generation failed for contract {contract_id} "
+                    f"(contract remains PUBLISHED): {embed_exc}"
+                )
+                embedding_count = 0
+
             logger.info(f"Contract {contract_id} approved and published: {promoted_count} parameters")
-            
+
             return {
                 'contract_id': contract_id,
                 'promoted_count': promoted_count,
+                'embeddings_generated': embedding_count,
                 'workflow_state': 'PUBLISHED'
             }
         

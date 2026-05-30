@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --sidebar-width: 240px;
+  --metadata-panel: 320px;
+}
+
+.w-sidebar-width {
+  width: var(--sidebar-width);
+}
+
+.ml-sidebar-width {
+  margin-left: var(--sidebar-width);
+}
+
+.w-metadata-panel {
+  width: var(--metadata-panel);
+}
+
 * {
   margin: 0;
   padding: 0;

@@ -11,6 +11,7 @@ from ..auth.models import UserRole
 from ..services.extraction_service import ExtractionService
 from ..services.workflow_service import WorkflowService
 from ..services.audit_service import AuditService
+from ..services.review_session_service import ReviewSessionService
 from ..database import db_pool
 import logging
 
@@ -23,6 +24,12 @@ class ParameterUpdate(BaseModel):
     """Model for parameter update request."""
     edited_value: str
     reviewer_status: str  # ACCEPTED, EDITED, REJECTED
+
+
+class SessionSaveRequest(BaseModel):
+    """Review session snapshot payload."""
+    last_param_id:   Optional[str] = None
+    scroll_position: int = 0
 
 
 @router.get("/{contract_id}/parameters")
@@ -117,7 +124,7 @@ async def submit_for_approval(
     contract_id: str,
     current_user: dict = Depends(require_role(UserRole.OPERATION_USER))
 ):
-    """Submit contract for approval."""
+    """Submit contract for approval and deactivate the review session."""
     try:
         await WorkflowService.transition(
             contract_id=contract_id,
@@ -125,7 +132,13 @@ async def submit_for_approval(
             user_id=current_user['user_id'],
             reason='Submitted for approval'
         )
-        
+
+        # Deactivate the active review session — no longer needed
+        await ReviewSessionService.deactivate_session(
+            contract_id=contract_id,
+            user_id=current_user['user_id'],
+        )
+
         # Audit log
         await AuditService.log(
             contract_id=contract_id,
@@ -134,15 +147,66 @@ async def submit_for_approval(
             entity_type='contract',
             entity_id=contract_id
         )
-        
+
         return {
             'contract_id': contract_id,
             'workflow_state': 'REVIEW_PENDING'
         }
-    
+
     except Exception as e:
         logger.error(f"Failed to submit: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to submit: {str(e)}"
+        )
+
+
+@router.post("/{contract_id}/session/save")
+async def save_review_session(
+    contract_id: str,
+    body: SessionSaveRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Persist the reviewer's current position in the parameter list.
+    Called on every parameter action and on a 60-second interval from the frontend.
+    """
+    try:
+        session_id = await ReviewSessionService.save_session(
+            contract_id=contract_id,
+            user_id=current_user['user_id'],
+            last_param_id=body.last_param_id,
+            scroll_position=body.scroll_position,
+        )
+        return {'session_id': session_id, 'saved': True}
+    except Exception as e:
+        logger.error(f"Failed to save review session: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save review session: {str(e)}"
+        )
+
+
+@router.get("/{contract_id}/session/restore")
+async def restore_review_session(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Retrieve the last saved review position for this user and contract.
+    Returns null session fields if no session exists (first visit).
+    """
+    try:
+        session = await ReviewSessionService.restore_session(
+            contract_id=contract_id,
+            user_id=current_user['user_id'],
+        )
+        if session is None:
+            return {'session': None, 'first_visit': True}
+        return {'session': session, 'first_visit': False}
+    except Exception as e:
+        logger.error(f"Failed to restore review session: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to restore review session: {str(e)}"
         )

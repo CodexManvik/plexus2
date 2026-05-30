@@ -4,6 +4,7 @@ Full implementation.
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi.responses import FileResponse
 from typing import Optional
 from ..auth.dependencies import get_current_user, require_role
 from ..auth.models import UserRole
@@ -179,4 +180,137 @@ async def delete_contract(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete contract: {str(e)}"
+        )
+
+
+@router.get("/{contract_id}/pdf-url")
+async def get_contract_pdf_url(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get a short-lived presigned URL to the OCI object for the contract's PDF,
+    or a backend local file-serving URL if OCI is not configured or in dev mode.
+    """
+    try:
+        # 1. Fetch contract record
+        async with db_pool.get_connection() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT oci_object_key, mime_type FROM contracts WHERE contract_id = :contract_id",
+                    {'contract_id': contract_id}
+                )
+                row = await cursor.fetchone()
+                if not row:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Contract not found"
+                    )
+                oci_object_key, mime_type = row[0], row[1]
+        
+        # 2. Check if we should generate OCI PAR (Pre-Authenticated Request)
+        from ..config import settings
+        import oci
+        from datetime import datetime, timedelta
+        import uuid
+        
+        # If the key is local or OCI namespace/bucket is missing, use local endpoint
+        if (not oci_object_key or 
+            oci_object_key.startswith("uploads") or 
+            not settings.oci_namespace or 
+            not settings.oci_bucket_name):
+            local_url = f"{settings.backend_url}/contracts/{contract_id}/pdf"
+            return {"url": local_url}
+            
+        try:
+            # Setup OCI client
+            config = oci.config.from_file(
+                file_location=settings.oci_config_file,
+                profile_name=settings.oci_profile
+            )
+            object_storage_client = oci.object_storage.ObjectStorageClient(config)
+            
+            # Create a PAR valid for 15 minutes
+            time_expires = datetime.utcnow() + timedelta(minutes=15)
+            par_details = oci.object_storage.models.CreatePreauthenticatedRequestDetails(
+                name=f"par-review-{contract_id[:8]}-{uuid.uuid4().hex[:8]}",
+                access_type="ObjectRead",
+                object_name=oci_object_key,
+                time_expires=time_expires
+            )
+            
+            par = object_storage_client.create_preauthenticated_request(
+                namespace_name=settings.oci_namespace,
+                bucket_name=settings.oci_bucket_name,
+                create_preauthenticated_request_details=par_details
+            )
+            
+            region = settings.oci_region or config.get("region", "us-ashburn-1")
+            par_url = f"https://objectstorage.{region}.oraclecloud.com{par.data.access_uri}"
+            
+            return {"url": par_url}
+            
+        except Exception as oci_err:
+            logger.warning(f"OCI PAR generation failed, falling back to local file serving: {oci_err}")
+            local_url = f"{settings.backend_url}/contracts/{contract_id}/pdf"
+            return {"url": local_url}
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate PDF URL: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate PDF URL: {str(e)}"
+        )
+
+
+@router.get("/{contract_id}/pdf")
+async def get_contract_pdf(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Serves the contract PDF file locally from the uploads directory.
+    """
+    try:
+        # Fetch file path
+        async with db_pool.get_connection() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT oci_object_key, original_filename, mime_type FROM contracts WHERE contract_id = :contract_id",
+                    {'contract_id': contract_id}
+                )
+                row = await cursor.fetchone()
+                if not row:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Contract not found"
+                    )
+                file_path, filename, mime_type = row[0], row[1], row[2]
+                
+        import os
+        if not file_path or not os.path.exists(file_path):
+            # Try uploads/contract_id.pdf as fallback
+            fallback_path = os.path.join("uploads", f"{contract_id}.pdf")
+            if os.path.exists(fallback_path):
+                file_path = fallback_path
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="PDF file not found on disk"
+                )
+                
+        return FileResponse(
+            path=file_path,
+            media_type=mime_type or "application/pdf",
+            filename=filename or f"{contract_id}.pdf"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to serve PDF file: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to serve PDF file: {str(e)}"
         )

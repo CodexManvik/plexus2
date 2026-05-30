@@ -101,29 +101,38 @@ async def get_db_connection():
         yield conn
 
 
-async def execute_query(query: str, params: dict = None, fetch_one: bool = False, fetch_all: bool = False):
+async def execute_query(
+    query: str,
+    params: dict = None,
+    fetch_one: bool = False,
+    fetch_all: bool = False,
+    commit: bool = True,
+):
     """
     Utility function for executing queries with automatic connection management.
-    
+
     Args:
-        query: SQL query string
-        params: Query parameters as dict
-        fetch_one: Return single row
-        fetch_all: Return all rows
-    
+        query:     SQL query string
+        params:    Query parameters as dict
+        fetch_one: Return single row (implies read-only, never commits)
+        fetch_all: Return all rows  (implies read-only, never commits)
+        commit:    Commit after DML (default True). Pass False when the caller
+                   manages its own transaction to avoid double commits.
+
     Returns:
-        Query result or None
+        Query result or rowcount
     """
     async with db_pool.get_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(query, params or {})
-            
+
             if fetch_one:
                 return await cursor.fetchone()
             elif fetch_all:
                 return await cursor.fetchall()
             else:
-                await conn.commit()
+                if commit:
+                    await conn.commit()
                 return cursor.rowcount
 
 

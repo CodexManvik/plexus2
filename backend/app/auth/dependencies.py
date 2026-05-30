@@ -22,19 +22,8 @@ security = HTTPBearer(auto_error=False)
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> dict:
     """
     Dependency to extract and validate current user from JWT token.
-    Bypassed in development mode to return mock administrator.
+    JWT validation is mandatory in all environments — no bypasses.
     """
-    if settings.environment == "development":
-        return {
-            'user_id': '89BF383A5F3548AC98108947D04C2B43',
-            'email': 'admin@plexus.com',
-            'full_name': 'System Administrator (Dev Mode)',
-            'role': 'admin',
-            'is_active': True,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
-        }
-        
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
