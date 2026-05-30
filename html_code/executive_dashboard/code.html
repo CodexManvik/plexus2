@@ -1,0 +1,471 @@
+<!DOCTYPE html><html lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LexIntel Contract Manager - Executive Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#d2e4fb",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#211200",
+                    "on-surface": "#191c1e",
+                    "surface-container-highest": "#e0e3e5",
+                    "background": "#f7f9fb",
+                    "error": "#ba1a1a",
+                    "on-secondary-container": "#54647a",
+                    "outline": "#74777d",
+                    "tertiary-fixed": "#feddb5",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#d8dadc",
+                    "surface-tint": "#4f6073",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "inverse-primary": "#b7c8de",
+                    "on-surface-variant": "#44474c",
+                    "primary-container": "#1a2b3c",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#38485a",
+                    "surface-bright": "#f7f9fb",
+                    "on-tertiary-fixed": "#281802",
+                    "surface-container-high": "#e6e8ea",
+                    "secondary-container": "#d0e1fb",
+                    "inverse-surface": "#2d3133",
+                    "on-primary-container": "#8192a7",
+                    "tertiary-container": "#38260b",
+                    "on-primary-fixed": "#0b1d2d",
+                    "surface": "#f7f9fb",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "tertiary-fixed-dim": "#e1c29b",
+                    "on-tertiary-fixed-variant": "#584326",
+                    "on-tertiary-container": "#a88c69",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#e0e3e5",
+                    "primary": "#041627",
+                    "outline-variant": "#c4c6cd",
+                    "on-background": "#191c1e",
+                    "secondary": "#505f76",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed": "#0b1c30",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#b7c8de",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container": "#eceef0",
+                    "secondary-fixed": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "xl": "32px",
+                    "sm": "8px",
+                    "sidebar-width": "240px",
+                    "gutter": "12px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "metadata-panel": "320px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "mono-md": ["JetBrains Mono"],
+                    "display-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "mono-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-sm": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center h-14 px-lg w-full">
+<div class="flex items-center gap-md">
+<span class="text-headline-lg font-headline-lg font-bold text-primary">ContractLens Manager</span>
+<nav class="hidden md:flex gap-lg ml-xl h-full items-center">
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-2 cursor-pointer active:opacity-80" href="#">Dashboard</a>
+<a class="font-label-md text-label-md text-on-surface-variant pb-2 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Repository</a>
+<a class="font-label-md text-label-md text-on-surface-variant pb-2 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Approvals</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="bg-surface-container-low border-none rounded-lg pl-xl pr-md py-xs text-body-sm w-64 focus:ring-1 focus:ring-primary" placeholder="Search contracts..." type="text">
+</div>
+<button class="bg-primary text-on-primary px-md py-xs rounded-lg font-label-md text-label-md hover:opacity-90 transition-all">Upload</button>
+<div class="flex gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">settings</span>
+</div>
+<img alt="User profile" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A professional headshot of a middle-aged executive in a charcoal grey suit, set against a blurred high-end corporate office background. The lighting is soft and flattering, emphasizing a crisp, clean aesthetic. The overall mood is authoritative and analytical, fitting for an enterprise contract management software interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPQTZB1agwQ5PTYV5FtJnMz5cCs98G0P77KO0d9Lar7RjiHkc22LS2e-gOmbgfoMDyp9w3h-yqqo-zj4cwh5PDiTSu-qfjB4fqCEHxQEtNZHoF_LlhkTNFHWT1PMZ4kfradpR6Wjzgs2SKRZEpZNeygURQ1pCZZO-85VqKK_bx8WNZZtclbK_kmes-ReOz8u01O2Y7Fwsu54jbFBjKvSw4sOaCBzNHv17IW59QXArgRKZBtwbIzrzuHF3R7ZMLTZ0_2hN7B58TsjTu">
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-sidebar-width z-40 bg-surface border-r border-outline-variant flex flex-col py-md px-sm gap-xs">
+<div class="px-sm mb-lg">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">balance</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-black text-primary leading-tight">ContractLens</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+<button class="w-full mt-md bg-primary text-on-primary py-sm rounded-lg font-label-md text-label-md flex items-center justify-center gap-xs hover:opacity-90 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Analysis
+            </button>
+</div>
+<nav class="flex-1 flex flex-col gap-xs overflow-y-auto hide-scrollbar">
+<a class="flex items-center gap-sm px-sm py-sm bg-secondary-container text-on-secondary-container font-bold rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md">Contracts</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-md text-label-md">Extraction</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="font-label-md text-label-md">Review</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-md text-label-md">Archive</span>
+</a>
+</nav>
+<div class="border-t border-outline-variant pt-sm flex flex-col gap-xs">
+<a class="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-sidebar-width pt-14 p-lg min-h-screen bg-background">
+<div class="max-w-[1400px] mx-auto">
+<!-- Dashboard Header -->
+<div class="flex justify-between items-end mb-lg">
+<div>
+<h1 class="font-display-sm text-display-sm text-primary">Executive Insights</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Contract lifecycle overview for Fiscal Year 2026</p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface-container-low border border-outline-variant px-md py-xs rounded-lg font-label-md text-label-md flex items-center gap-xs text-on-surface-variant hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+                        This Quarter
+                    </button>
+<button class="bg-surface-container-low border border-outline-variant px-md py-xs rounded-lg font-label-md text-label-md flex items-center gap-xs text-on-surface-variant hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                        Filter
+                    </button>
+</div>
+</div>
+<!-- KPI Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
+<!-- KPI 1: Executed -->
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">Executed Contracts (FY)</p>
+<p class="font-display-sm text-display-sm text-primary">1,284</p>
+</div>
+<div class="bg-primary-fixed text-on-primary-fixed-variant p-sm rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">history_edu</span>
+</div>
+</div>
+<div class="mt-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-on-primary-container text-[18px]">trending_up</span>
+<span class="text-body-sm font-bold text-on-primary-container">+12.4%</span>
+<span class="text-body-sm text-on-surface-variant">vs last year</span>
+</div>
+</div>
+<!-- KPI 2: Pending -->
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">Pending Review</p>
+<p class="font-display-sm text-display-sm text-primary">87</p>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed-variant p-sm rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">pending_actions</span>
+</div>
+</div>
+<div class="mt-lg">
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+<p class="mt-xs text-body-sm text-on-surface-variant">65% assigned to Legal</p>
+</div>
+</div>
+<!-- KPI 3: Closing Soon -->
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">Closing Soon (30d)</p>
+<p class="font-display-sm text-display-sm text-error">24</p>
+</div>
+<div class="bg-error-container text-on-error-container p-sm rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">event_busy</span>
+</div>
+</div>
+<div class="mt-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-error text-[18px]">warning</span>
+<span class="text-body-sm font-bold text-error">Critical Action Required</span>
+</div>
+</div>
+</div>
+<!-- Visualization Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg h-[500px]">
+<!-- Bar Chart: Pending Contracts by Department -->
+<div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col">
+<div class="flex justify-between items-center mb-xl">
+<h3 class="font-headline-md text-headline-md text-primary">Department Backlog</h3>
+<div class="flex gap-xs items-center">
+<span class="w-3 h-3 bg-primary rounded-full"></span>
+<span class="text-label-md font-label-md text-on-surface-variant">Pending</span>
+</div>
+</div>
+<div class="flex-1 flex items-end justify-between gap-md px-md pb-md">
+<!-- Bar Item -->
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-primary-fixed/50 hover:bg-primary-fixed transition-colors rounded-t-lg relative group h-[180px]" style="height: 179.996px; transition: height 1s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="absolute -top-xl left-1/2 -translate-x-1/2 bg-primary text-on-primary px-xs py-[2px] rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">42</div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Sales</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-primary rounded-t-lg relative group h-[280px]" style="height: 279.999px; transition: height 1s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="absolute -top-xl left-1/2 -translate-x-1/2 bg-primary text-on-primary px-xs py-[2px] rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">87</div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant font-bold">Legal</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-primary-fixed/50 hover:bg-primary-fixed transition-colors rounded-t-lg relative group h-[120px]" style="height: 119.997px; transition: height 1s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="absolute -top-xl left-1/2 -translate-x-1/2 bg-primary text-on-primary px-xs py-[2px] rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">28</div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">HR</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-primary-fixed/50 hover:bg-primary-fixed transition-colors rounded-t-lg relative group h-[210px]" style="height: 209.995px; transition: height 1s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="absolute -top-xl left-1/2 -translate-x-1/2 bg-primary text-on-primary px-xs py-[2px] rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">56</div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Procure</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-primary-fixed/50 hover:bg-primary-fixed transition-colors rounded-t-lg relative group h-[90px]" style="height: 89.9979px; transition: height 1s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="absolute -top-xl left-1/2 -translate-x-1/2 bg-primary text-on-primary px-xs py-[2px] rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">15</div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">IT</span>
+</div>
+</div>
+</div>
+<!-- Expiry List -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="p-lg border-b border-outline-variant bg-surface-container-low">
+<h3 class="font-headline-md text-headline-md text-primary">Upcoming Expiries</h3>
+<p class="text-body-sm text-on-surface-variant">Contracts requiring renewal within 15 days</p>
+</div>
+<div class="flex-1 overflow-y-auto divide-y divide-outline-variant">
+<!-- List Item -->
+<div class="p-md hover:bg-surface-container transition-all flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">assignment_late</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-bold text-primary group-hover:text-primary transition-colors">Azure MSA 2024</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Microsoft Corp • $450k</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-error font-bold font-label-md text-label-md">2 Days Left</p>
+<p class="text-body-sm text-on-surface-variant">Aug 24</p>
+</div>
+</div>
+<!-- List Item -->
+<div class="p-md hover:bg-surface-container transition-all flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">gavel</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-bold text-primary group-hover:text-primary transition-colors">Vendor Lease Agreement</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Apex Properties • $12k/mo</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-on-surface-variant font-bold font-label-md text-label-md">5 Days Left</p>
+<p class="text-body-sm text-on-surface-variant">Aug 27</p>
+</div>
+</div>
+<!-- List Item -->
+<div class="p-md hover:bg-surface-container transition-all flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">handshake</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-bold text-primary group-hover:text-primary transition-colors">Stripe Integration NDA</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Stripe Inc • Confidential</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-on-surface-variant font-bold font-label-md text-label-md">11 Days Left</p>
+<p class="text-body-sm text-on-surface-variant">Sep 02</p>
+</div>
+</div>
+<!-- List Item -->
+<div class="p-md hover:bg-surface-container transition-all flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-bold text-primary group-hover:text-primary transition-colors">Logistics Subcontract</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">FedEx Global • $1.2M</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-on-surface-variant font-bold font-label-md text-label-md">14 Days Left</p>
+<p class="text-body-sm text-on-surface-variant">Sep 05</p>
+</div>
+</div>
+</div>
+<div class="p-sm bg-surface-container-low text-center border-t border-outline-variant">
+<button class="text-primary font-label-md text-label-md hover:underline">View All Expiries</button>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Detailed Table Preview -->
+<div class="mt-lg bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-primary">Recent Activity Log</h3>
+<div class="flex gap-sm">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-lg py-sm font-label-md text-label-md text-on-surface-variant">CONTRACT TITLE</th>
+<th class="px-lg py-sm font-label-md text-label-md text-on-surface-variant">DEPARTMENT</th>
+<th class="px-lg py-sm font-label-md text-label-md text-on-surface-variant">STATUS</th>
+<th class="px-lg py-sm font-label-md text-label-md text-on-surface-variant">OWNER</th>
+<th class="px-lg py-sm font-label-md text-label-md text-on-surface-variant">LAST UPDATED</th>
+<th class="px-lg py-sm font-label-md text-label-md text-on-surface-variant text-right">ACTION</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md font-body-md text-body-md font-bold text-primary">Enterprise Software License</td>
+<td class="px-lg py-md font-body-md text-body-md">IT Operations</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-secondary-container text-on-secondary-container text-[11px] font-bold rounded uppercase tracking-wider">In Review</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-[10px] font-bold text-primary">AM</div>
+<span class="font-body-sm text-body-sm">Alex Miller</span>
+</div>
+</td>
+<td class="px-lg py-md font-body-sm text-body-sm">2 hours ago</td>
+<td class="px-lg py-md text-right">
+<button class="text-primary hover:opacity-70 transition-opacity">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md font-body-md text-body-md font-bold text-primary">Q3 Marketing Retainer</td>
+<td class="px-lg py-md font-body-md text-body-md">Marketing</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-surface-container-highest text-on-surface-variant text-[11px] font-bold rounded uppercase tracking-wider">Signed</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<div class="w-6 h-6 rounded-full bg-tertiary-fixed flex items-center justify-center text-[10px] font-bold text-tertiary">SR</div>
+<span class="font-body-sm text-body-sm">Sarah Reed</span>
+</div>
+</td>
+<td class="px-lg py-md font-body-sm text-body-sm">Yesterday</td>
+<td class="px-lg py-md text-right">
+<button class="text-primary hover:opacity-70 transition-opacity">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+<!-- Interactive script for some chart animations and micro-interactions -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simple bar chart height animation on load
+            const bars = document.querySelectorAll('.flex-1 .w-full[class*="h-"]');
+            bars.forEach(bar => {
+                const targetHeight = bar.style.height || getComputedStyle(bar).height;
+                bar.style.height = '0px';
+                setTimeout(() => {
+                    bar.style.transition = 'height 1s cubic-bezier(0.16, 1, 0.3, 1)';
+                    bar.style.height = targetHeight;
+                }, 100);
+            });
+        });
+    </script>
+
+
+
+
+</body></html>

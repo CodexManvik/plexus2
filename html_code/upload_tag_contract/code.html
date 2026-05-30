@@ -1,0 +1,371 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LexIntel | Contract Upload &amp; Tagging</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#d2e4fb",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#211200",
+                    "on-surface": "#191c1e",
+                    "surface-container-highest": "#e0e3e5",
+                    "background": "#f7f9fb",
+                    "error": "#ba1a1a",
+                    "on-secondary-container": "#54647a",
+                    "outline": "#74777d",
+                    "tertiary-fixed": "#feddb5",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#d8dadc",
+                    "surface-tint": "#4f6073",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "inverse-primary": "#b7c8de",
+                    "on-surface-variant": "#44474c",
+                    "primary-container": "#1a2b3c",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#38485a",
+                    "surface-bright": "#f7f9fb",
+                    "on-tertiary-fixed": "#281802",
+                    "surface-container-high": "#e6e8ea",
+                    "secondary-container": "#d0e1fb",
+                    "inverse-surface": "#2d3133",
+                    "on-primary-container": "#8192a7",
+                    "tertiary-container": "#38260b",
+                    "on-primary-fixed": "#0b1d2d",
+                    "surface": "#f7f9fb",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "tertiary-fixed-dim": "#e1c29b",
+                    "on-tertiary-fixed-variant": "#584326",
+                    "on-tertiary-container": "#a88c69",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#e0e3e5",
+                    "primary": "#041627",
+                    "outline-variant": "#c4c6cd",
+                    "on-background": "#191c1e",
+                    "secondary": "#505f76",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed": "#0b1c30",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#b7c8de",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container": "#eceef0",
+                    "secondary-fixed": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "xl": "32px",
+                    "sm": "8px",
+                    "sidebar-width": "240px",
+                    "gutter": "12px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "metadata-panel": "320px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "mono-md": ["JetBrains Mono"],
+                    "display-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "mono-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-sm": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .sidebar-active {
+            background-color: #d0e1fb; /* secondary-container */
+            color: #54647a; /* on-secondary-container */
+            font-weight: 700;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c4c6cd;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant dark:border-outline h-14 flex justify-between items-center px-lg w-full">
+<div class="flex items-center gap-xl">
+<span class="text-headline-lg font-headline-lg font-bold text-primary dark:text-primary-fixed">ContractLens Manager</span>
+<nav class="hidden md:flex items-center gap-lg h-full pt-2">
+<a class="text-on-surface-variant dark:text-on-surface-variant pb-2 font-label-md text-label-md hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Dashboard</a>
+<a class="text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed pb-2 font-label-md text-label-md cursor-pointer active:opacity-80" href="#">Repository</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant pb-2 font-label-md text-label-md hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Approvals</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-xl pr-sm py-xs bg-surface-container-low border border-outline-variant rounded-lg text-body-sm w-64 focus:outline-none focus:border-primary" placeholder="Search contracts..." type="text">
+</div>
+<button class="bg-primary text-on-primary px-md py-xs rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">Upload</button>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="settings">settings</span>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A professional headshot of a corporate legal executive with a clean, modern aesthetic. The lighting is soft and professional, using high-key tones that align with a light-mode UI. Background is a defocused minimalist office setting with slate and navy accents. The overall mood is authoritative and reliable." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApL_NaosfHQd8sa88Wy2XYNCHR_01e2VN4cjB4KGnws9bSNj81ObV7GZpVPRL9Glg_h16e49KnsjW48mhVwC0yP3PibRWTZ7PIyFlO7Bkec64pdXouXI-luQ8A89C_iGVyXkyaBcsuDPYCQ7IMBfz6DnkAL4cs2-gvxbxnBUNFv2d0QDX8fMXsRmVbW7C2QteiVndnmcoHRnhGkXNhc0KzaXC83N40gXqebDYIqlHgU9WXGUHTMMKbz6eVJtXQT0DzUhzdU88HyFnm">
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-sidebar-width z-40 bg-surface dark:bg-surface-container-low border-r border-outline-variant dark:border-outline flex flex-col py-md px-sm gap-xs">
+<div class="flex items-center gap-sm px-sm mb-lg">
+<div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed" data-icon="corporate_fare" style="font-variation-settings: 'FILL' 1;">corporate_fare</span>
+</div>
+<div>
+<p class="font-headline-md text-headline-md font-black text-primary leading-tight">ContractLens</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+<button class="mx-sm mb-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-xs hover:opacity-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+            New Analysis
+        </button>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-sm px-sm py-sm text-secondary dark:text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> Analytics
+            </a>
+<a class="flex items-center gap-sm px-sm py-sm bg-secondary-container dark:bg-primary-container text-on-secondary-container dark:text-on-primary-container font-bold rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description" style="font-variation-settings: 'FILL' 1;">description</span> Contracts
+            </a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary dark:text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span> Extraction
+            </a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary dark:text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span> Admin
+            </a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary dark:text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span> Review
+            </a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary dark:text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span> Archive
+            </a>
+</nav>
+<div class="mt-auto pt-md border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-sm px-sm py-sm text-secondary dark:text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span> Support
+            </a>
+<a class="flex items-center gap-sm px-sm py-sm text-secondary dark:text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span> Logout
+            </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar-width pt-14 h-screen flex overflow-hidden">
+<!-- Left Pane: Upload Area -->
+<section class="flex-1 p-lg flex flex-col gap-lg overflow-y-auto custom-scrollbar">
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-display-sm text-display-sm text-primary">Upload Contract</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Drag and drop documents to initiate AI-powered metadata extraction.</p>
+</div>
+<div class="flex gap-sm">
+<span class="px-sm py-1 bg-surface-container-high text-on-surface-variant rounded-full text-label-md font-label-md">PDF</span>
+<span class="px-sm py-1 bg-surface-container-high text-on-surface-variant rounded-full text-label-md font-label-md">DOCX</span>
+<span class="px-sm py-1 bg-surface-container-high text-on-surface-variant rounded-full text-label-md font-label-md">XLSX</span>
+</div>
+</div>
+<!-- Bento Dropzone -->
+<div class="grid grid-cols-12 gap-md flex-1 min-h-[400px]">
+<div class="col-span-12 md:col-span-8 border-2 border-dashed border-outline-variant bg-surface-container-lowest rounded-xl flex flex-col items-center justify-center p-xl group hover:border-primary transition-colors cursor-pointer relative overflow-hidden" id="dropzone">
+<!-- Background Visual Subtle Grid -->
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#041627 1px, transparent 1px); background-size: 20px 20px;"></div>
+<div class="w-16 h-16 bg-primary-fixed rounded-full flex items-center justify-center mb-md group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="upload_file">upload_file</span>
+</div>
+<p class="font-headline-md text-headline-md text-on-surface mb-xs">Click or drag files to this area to upload</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs text-center">Support for single or bulk uploading. Strict enterprise security protocols applied to all file transmissions.</p>
+<div class="mt-xl flex gap-md">
+<div class="flex flex-col items-center gap-xs px-lg py-sm bg-surface-container rounded border border-outline-variant">
+<span class="material-symbols-outlined text-primary" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-label-md text-label-md">Legal PDF</span>
+</div>
+<div class="flex flex-col items-center gap-xs px-lg py-sm bg-surface-container rounded border border-outline-variant">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Word Doc</span>
+</div>
+</div>
+</div>
+<!-- Secondary Info Cards (Bento Style) -->
+<div class="col-span-12 md:col-span-4 flex flex-col gap-md">
+<div class="flex-1 bg-primary text-on-primary p-lg rounded-xl flex flex-col justify-between overflow-hidden relative">
+<div class="z-10">
+<h3 class="font-headline-md text-headline-md mb-xs">AI Extraction</h3>
+<p class="font-body-sm text-body-sm opacity-80">Our engine automatically identifies clauses, dates, and counterparties with 99.4% accuracy.</p>
+</div>
+<div class="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4">
+<span class="material-symbols-outlined text-white opacity-10 text-[120px]" data-icon="psychology">psychology</span>
+</div>
+</div>
+<div class="flex-1 bg-white border border-outline-variant p-lg rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md text-primary mb-xs">Processing Queue</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Recent uploads being processed in your organization.</p>
+</div>
+<div class="mt-md space-y-sm">
+<div class="flex items-center gap-sm">
+<div class="w-1 h-8 bg-amber-500 rounded-full"></div>
+<div class="flex-1">
+<p class="font-label-md text-label-md truncate">MSA_Global_Services_2024.pdf</p>
+<div class="w-full bg-surface-container-high h-1 rounded-full mt-1">
+<div class="bg-amber-500 h-1 rounded-full" style="width: 65%;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Metadata Form -->
+<aside class="w-[440px] bg-white border-l border-outline-variant flex flex-col shadow-sm">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<h2 class="font-headline-md text-headline-md text-primary">Tagging &amp; Metadata</h2>
+<button class="text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<form class="flex-1 overflow-y-auto p-lg space-y-lg custom-scrollbar">
+<!-- Org & Unit Section -->
+<div class="space-y-md">
+<p class="font-label-md text-label-md text-primary-container uppercase tracking-wider">Entity Details</p>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Organization</label>
+<select class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md">
+<option>LexIntel Corporate</option>
+<option>Global Holdings LLC</option>
+<option>Strategic Partners Inc.</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Business Unit</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md" placeholder="e.g. Finance" type="text">
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Location</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md" placeholder="New York, NY" type="text">
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Department</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md" placeholder="Legal Operations" type="text">
+</div>
+</div>
+<hr class="border-outline-variant">
+<!-- Contract Context -->
+<div class="space-y-md">
+<p class="font-label-md text-label-md text-primary-container uppercase tracking-wider">Contractual Context</p>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Customer/Partner Name</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md" placeholder="Search or create counterparty..." type="text">
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Financial Year</label>
+<select class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md">
+<option>FY 2024</option>
+<option>FY 2023</option>
+<option>FY 2025 (Projected)</option>
+</select>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Contract Type</label>
+<select class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md">
+<option>Service Agreement</option>
+<option>Licensing</option>
+<option>Procurement</option>
+<option>Employment</option>
+</select>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Agreement Type</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md" placeholder="Master Service Agreement (MSA)" type="text">
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Additional Info</label>
+<textarea class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md resize-none" placeholder="Notes on urgency, specific clause exceptions, or internal references..." rows="3"></textarea>
+</div>
+</form>
+<!-- Sticky Footer Action -->
+<div class="p-lg bg-white border-t border-outline-variant">
+<button class="w-full py-md bg-primary text-on-primary rounded-lg font-headline-md text-headline-md hover:bg-primary-container transition-colors shadow-lg active:scale-[0.98] duration-150">
+                    Submit &amp; Start Extraction
+                </button>
+<button class="w-full mt-sm py-sm text-secondary font-label-md text-label-md hover:bg-surface-container transition-colors">
+                    Save as Draft
+                </button>
+</div>
+</aside>
+</main>
+<script>
+        // Micro-interactions for the dropzone
+        const dropzone = document.getElementById('dropzone');
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('bg-secondary-container', 'border-primary');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('bg-secondary-container', 'border-primary');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('bg-secondary-container', 'border-primary');
+            alert('File received. Processing logic would trigger here.');
+        });
+
+        // Simple click interaction
+        dropzone.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.click();
+        });
+    </script>
+
+
+</body></html>

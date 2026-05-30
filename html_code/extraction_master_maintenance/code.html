@@ -1,0 +1,460 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LexIntel | Extraction Master Maintenance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#d2e4fb",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#211200",
+                        "on-surface": "#191c1e",
+                        "surface-container-highest": "#e0e3e5",
+                        "background": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "outline": "#74777d",
+                        "tertiary-fixed": "#feddb5",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d8dadc",
+                        "surface-tint": "#4f6073",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "inverse-primary": "#b7c8de",
+                        "on-surface-variant": "#44474c",
+                        "primary-container": "#1a2b3c",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#38485a",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary-fixed": "#281802",
+                        "surface-container-high": "#e6e8ea",
+                        "secondary-container": "#d0e1fb",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-container": "#8192a7",
+                        "tertiary-container": "#38260b",
+                        "on-primary-fixed": "#0b1d2d",
+                        "surface": "#f7f9fb",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "tertiary-fixed-dim": "#e1c29b",
+                        "on-tertiary-fixed-variant": "#584326",
+                        "on-tertiary-container": "#a88c69",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e0e3e5",
+                        "primary": "#041627",
+                        "outline-variant": "#c4c6cd",
+                        "on-background": "#191c1e",
+                        "secondary": "#505f76",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#b7c8de",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-container": "#eceef0",
+                        "secondary-fixed": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "sidebar-width": "240px",
+                        "gutter": "12px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "metadata-panel": "320px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "mono-md": ["JetBrains Mono"],
+                        "display-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "mono-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-sm": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e0e3e5; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c4c6cd; }
+        .custom-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden h-screen flex">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width z-40 bg-surface dark:bg-surface-container-low border-r border-outline-variant dark:border-outline flex flex-col py-md px-sm gap-xs">
+<div class="px-sm mb-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[20px]">architecture</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-black text-primary leading-tight">Contract Lens</h1>
+<p class="font-body-sm text-body-sm text-secondary">Enterprise Tier</p>
+</div>
+</div>
+</div>
+<button class="mx-sm mb-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg flex items-center justify-center gap-sm hover:opacity-90 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Analysis
+        </button>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-md px-sm py-md text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Contracts</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md bg-secondary-container dark:bg-primary-container text-on-secondary-container dark:text-on-primary-container font-bold rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="font-label-md text-label-md">Extraction</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-label-md text-label-md">Review</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md text-label-md">Archive</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-md space-y-1">
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="ml-sidebar-width flex-1 flex flex-col h-full relative overflow-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-sidebar-width right-0 z-50 bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant dark:border-outline flex justify-between items-center h-14 px-lg">
+<div class="flex items-center gap-xl">
+<span class="font-headline-lg text-headline-lg font-bold text-primary dark:text-primary-fixed">ContractLens Manager</span>
+<nav class="flex items-center gap-lg h-full">
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-on-surface-variant pb-2 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Dashboard</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-on-surface-variant pb-2 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Repository</a>
+<a class="font-label-md text-label-md text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed pb-2 cursor-pointer active:opacity-80" href="#">Approvals</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="absolute left-sm top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">search</span>
+<input class="pl-xl pr-md py-xs bg-surface-container-low border-none rounded-lg text-body-sm focus:ring-1 focus:ring-primary w-64 transition-all" placeholder="Search Master Parameters..." type="text">
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high p-xs rounded-full">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high p-xs rounded-full">settings</button>
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC10mBTBbAIRWuIBB-7LBL_yqb-gfX_4M7eC-iADHHKI1ofQ-E0oiNk6zK5EDq86ZStajTFvBRhXHXwGmcKMHA1JpgVEIHJw5GRgDypScJ8NcU65HGQ44OwLnCeleSK9zvnH3-VNcL0G5_yL7_o6zZ5uOU1KGWLOcaHyiQPuFFCcj0VKhGCAd54F4scsbybLvizz21JiO9B8z36v_Z4C4sKB1jUAwCVCfu2oOUOvKYMv3gADZheFRH_GWDtw_3L9hOacCm0PCHcfhfa">
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="mt-14 p-lg flex flex-col gap-lg overflow-y-auto h-[calc(100vh-56px)]">
+<!-- Page Header -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary">Extraction Master Maintenance</h2>
+<p class="text-secondary font-body-md">Configure data point logic and association types for automated OCR processing.</p>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-sm border border-outline-variant rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-all">Export Schema</button>
+<button class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center gap-xs shadow-sm hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[16px]">add_box</span> Define Parameter
+                    </button>
+</div>
+</div>
+<!-- Bento Config Section -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Definition Form Panel (Left) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-lg">
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+<h3 class="font-headline-md text-headline-md text-primary mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined">settings_input_component</span>
+                            Extraction Logic
+                        </h3>
+<form class="space-y-md">
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Contract Type</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg font-body-sm py-sm focus:ring-1 focus:ring-primary">
+<option>Master Service Agreement</option>
+<option>Non-Disclosure Agreement</option>
+<option>Employment Contract</option>
+<option>Real Estate Lease</option>
+</select>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Agreement Category</label>
+<div class="flex flex-wrap gap-xs">
+<span class="px-sm py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-md cursor-pointer hover:opacity-80">Commercial</span>
+<span class="px-sm py-1 bg-surface-container-high text-secondary rounded-full text-label-md cursor-pointer hover:bg-secondary-container transition-colors">Vendor</span>
+<span class="px-sm py-1 bg-surface-container-high text-secondary rounded-full text-label-md cursor-pointer hover:bg-secondary-container transition-colors">Internal</span>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Parameter Head</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg font-body-sm py-sm focus:ring-1 focus:ring-primary" placeholder="e.g., Termination Clause" type="text">
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant">Parameter Logic (P1+P2...)</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg font-mono-md text-mono-md py-sm focus:ring-1 focus:ring-primary font-bold" placeholder="P1 + P2 + P3" type="text">
+<p class="text-[10px] text-outline italic">Use arithmetic symbols for combined metadata extractions.</p>
+</div>
+<div class="pt-sm">
+<button class="w-full py-md bg-secondary text-on-secondary rounded-lg font-label-md text-label-md shadow-sm hover:opacity-90 active:scale-[0.99] transition-all" type="button">Update Maintenance Log</button>
+</div>
+</form>
+</div>
+<!-- Usage Statistics Card -->
+<div class="bg-primary text-on-primary p-lg rounded-xl shadow-lg relative overflow-hidden group">
+<div class="relative z-10">
+<p class="font-label-md text-label-md opacity-80 uppercase tracking-widest">Global Extraction Accuracy</p>
+<h4 class="text-display-sm font-display-sm mt-xs">98.4%</h4>
+<div class="mt-md flex items-center gap-sm">
+<div class="flex-1 h-1.5 bg-on-primary/20 rounded-full overflow-hidden">
+<div class="h-full bg-on-primary w-[98%] rounded-full"></div>
+</div>
+<span class="text-body-sm">+2.1% WoW</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-[120px] opacity-10 group-hover:rotate-12 transition-transform duration-700">query_stats</span>
+</div>
+</div>
+<!-- Main Data Table Panel (Right) -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-lg">
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col h-full">
+<div class="px-lg py-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
+<h3 class="font-label-md text-label-md text-primary uppercase tracking-wider">Active Parameter Schema</h3>
+<div class="flex gap-xs">
+<button class="p-xs hover:bg-surface-container-high rounded transition-colors material-symbols-outlined text-[18px]">filter_list</button>
+<button class="p-xs hover:bg-surface-container-high rounded transition-colors material-symbols-outlined text-[18px]">download</button>
+<button class="p-xs hover:bg-surface-container-high rounded transition-colors material-symbols-outlined text-[18px]">more_vert</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-lg py-sm font-label-md text-label-md text-secondary uppercase whitespace-nowrap">Parameter Head</th>
+<th class="px-lg py-sm font-label-md text-label-md text-secondary uppercase whitespace-nowrap">Parameter Name</th>
+<th class="px-lg py-sm font-label-md text-label-md text-secondary uppercase whitespace-nowrap">Contract Association</th>
+<th class="px-lg py-sm font-label-md text-label-md text-secondary uppercase whitespace-nowrap text-center">Confidence</th>
+<th class="px-lg py-sm font-label-md text-label-md text-secondary uppercase whitespace-nowrap text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md font-body-sm font-bold text-primary">Liability Cap</td>
+<td class="px-lg py-md">
+<span class="font-mono-md text-mono-md bg-surface-container px-sm py-0.5 rounded text-secondary">P1 + P4 + P9</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-blue-500"></span>
+<span class="font-body-sm text-secondary">MSA, SOW</span>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<span class="text-label-md font-bold text-on-error-container bg-error-container/30 px-2 py-1 rounded">High</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined hover:text-primary transition-colors text-outline">edit_square</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md font-body-sm font-bold text-primary">Notice Period</td>
+<td class="px-lg py-md">
+<span class="font-mono-md text-mono-md bg-surface-container px-sm py-0.5 rounded text-secondary">P2 + P3</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="font-body-sm text-secondary">Employment, Lease</span>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<span class="text-label-md font-bold text-on-primary-container bg-primary-container/10 px-2 py-1 rounded">Med</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined hover:text-primary transition-colors text-outline">edit_square</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md font-body-sm font-bold text-primary">Governing Law</td>
+<td class="px-lg py-md">
+<span class="font-mono-md text-mono-md bg-surface-container px-sm py-0.5 rounded text-secondary">P11</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+<span class="font-body-sm text-secondary">All Global</span>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<span class="text-label-md font-bold text-on-error-container bg-error-container/30 px-2 py-1 rounded">High</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined hover:text-primary transition-colors text-outline">edit_square</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md font-body-sm font-bold text-primary">Force Majeure</td>
+<td class="px-lg py-md">
+<span class="font-mono-md text-mono-md bg-surface-container px-sm py-0.5 rounded text-secondary">P15 + P16</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-purple-500"></span>
+<span class="font-body-sm text-secondary">Procurement</span>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<span class="text-label-md font-bold text-secondary bg-surface-container px-2 py-1 rounded">Low</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined hover:text-primary transition-colors text-outline">edit_square</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md font-body-sm font-bold text-primary">Renewal Rights</td>
+<td class="px-lg py-md">
+<span class="font-mono-md text-mono-md bg-surface-container px-sm py-0.5 rounded text-secondary">P22 + P24</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-blue-500"></span>
+<span class="font-body-sm text-secondary">SaaS, Lease</span>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<span class="text-label-md font-bold text-on-error-container bg-error-container/30 px-2 py-1 rounded">High</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined hover:text-primary transition-colors text-outline">edit_square</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-auto px-lg py-md bg-surface-container-low border-t border-outline-variant flex justify-between items-center">
+<span class="font-body-sm text-secondary">Showing 5 of 42 Extraction Rules</span>
+<div class="flex gap-xs">
+<button class="p-xs border border-outline-variant rounded hover:bg-surface-container-high transition-all material-symbols-outlined">chevron_left</button>
+<button class="p-xs border border-outline-variant rounded hover:bg-surface-container-high transition-all material-symbols-outlined">chevron_right</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Contextual Documentation Panel -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="custom-glass p-md rounded-xl border border-outline-variant/30 flex gap-md items-start">
+<div class="p-sm bg-primary-fixed rounded-lg text-primary">
+<span class="material-symbols-outlined">auto_stories</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary">OCR Pattern Logic</h4>
+<p class="font-body-sm text-on-surface-variant">Combined parameters use weighted proximity search to validate data strings across multiple pages.</p>
+</div>
+</div>
+<div class="custom-glass p-md rounded-xl border border-outline-variant/30 flex gap-md items-start">
+<div class="p-sm bg-tertiary-fixed rounded-lg text-tertiary">
+<span class="material-symbols-outlined">schema</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary">Type Hierarchies</h4>
+<p class="font-body-sm text-on-surface-variant">Changes here propagate immediately to the Review queue for all pending document uploads.</p>
+</div>
+</div>
+<div class="custom-glass p-md rounded-xl border border-outline-variant/30 flex gap-md items-start">
+<div class="p-sm bg-error-container rounded-lg text-on-error-container">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary">Maintenance Audit</h4>
+<p class="font-body-sm text-on-surface-variant">System logs all logic updates. Rollback is available in the Revision History tab.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Background Decoration -->
+<div class="fixed top-0 right-0 w-1/3 h-1/2 bg-gradient-to-bl from-primary/5 to-transparent -z-10 pointer-events-none"></div>
+<script>
+        // Micro-interaction for hover states on rows
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                row.querySelector('button').classList.remove('text-outline');
+                row.querySelector('button').classList.add('text-primary');
+            });
+            row.addEventListener('mouseleave', () => {
+                row.querySelector('button').classList.add('text-outline');
+                row.querySelector('button').classList.remove('text-primary');
+            });
+        });
+
+        // Simple tab/state handling for "Agreement Category" spans
+        const categorySpans = document.querySelectorAll('.cursor-pointer');
+        categorySpans.forEach(span => {
+            span.addEventListener('click', () => {
+                categorySpans.forEach(s => {
+                    s.classList.remove('bg-secondary-container', 'text-on-secondary-container');
+                    s.classList.add('bg-surface-container-high', 'text-secondary');
+                });
+                span.classList.add('bg-secondary-container', 'text-on-secondary-container');
+                span.classList.remove('bg-surface-container-high', 'text-secondary');
+            });
+        });
+    </script>
+
+
+
+
+</body></html>

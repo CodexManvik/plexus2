@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>ContractLens | Enterprise Contract Intelligence</title>
+    
+    <!-- Scripts & Styles -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/history@5/umd/history.development.js"></script>
+    <script src="https://unpkg.com/react-router@6.3.0/umd/react-router.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@6.3.0/umd/react-router-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed": "#d2e4fb",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#211200",
+                        "on-surface": "#191c1e",
+                        "surface-container-highest": "#e0e3e5",
+                        "background": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "outline": "#74777d",
+                        "tertiary-fixed": "#feddb5",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d8dadc",
+                        "surface-tint": "#4f6073",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "inverse-primary": "#b7c8de",
+                        "on-surface-variant": "#44474c",
+                        "primary-container": "#1a2b3c",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#38485a",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary-fixed": "#281802",
+                        "surface-container-high": "#e6e8ea",
+                        "secondary-container": "#d0e1fb",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-container": "#8192a7",
+                        "tertiary-container": "#38260b",
+                        "on-primary-fixed": "#0b1d2d",
+                        "surface": "#f7f9fb",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "tertiary-fixed-dim": "#e1c29b",
+                        "on-tertiary-fixed-variant": "#584326",
+                        "on-tertiary-container": "#a88c69",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e0e3e5",
+                        "primary": "#1a2b3c", // Updated to theme instruction
+                        "outline-variant": "#c4c6cd",
+                        "on-background": "#191c1e",
+                        "secondary": "#505f76",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#b7c8de",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-container": "#eceef0",
+                        "secondary-fixed": "#d3e4fe"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "unit": "4px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "sidebar-width": "240px",
+                        "gutter": "12px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "metadata-panel": "320px",
+                        "xs": "4px"
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"],
+                        mono: ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e0e3e5; border-radius: 10px; }
+        .pdf-page-shadow { box-shadow: 0px 4px 12px rgba(0,0,0,0.08); }
+        .citation-highlight { background-color: rgba(210, 228, 251, 0.4); border-left: 3px solid #1a2b3c; transition: all 0.2s ease; }
+        .active-citation { background-color: rgba(210, 228, 251, 0.8); box-shadow: 0 0 0 2px #1a2b3c; }
+    </style>
+</head>
+<body class="font-sans text-on-surface bg-background">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { createRoot } = ReactDOM;
+        const { MemoryRouter, Routes, Route, Link, useNavigate, useLocation } = ReactRouterDOM;
+
+        // --- Common Components ---
+
+        const TopNavBar = ({ activeTab = "Dashboard" }) => {
+            const navigate = useNavigate();
+            return (
+                <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center h-14 px-lg">
+                    <div className="flex items-center gap-md">
+                        <span className="text-xl font-bold text-primary mr-4">ContractLens Manager</span>
+                        <nav className="hidden md:flex gap-lg h-full items-center">
+                            <Link to="/dashboard" className={`font-semibold text-sm pb-2 transition-all ${activeTab === 'Dashboard' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-primary'}`}>Dashboard</Link>
+                            <Link to="/repository" className={`font-semibold text-sm pb-2 transition-all ${activeTab === 'Repository' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-primary'}`}>Repository</Link>
+                            <Link to="/approvals" className={`font-semibold text-sm pb-2 transition-all ${activeTab === 'Approvals' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-primary'}`}>Approvals</Link>
+                        </nav>
+                    </div>
+                    <div className="flex items-center gap-md">
+                        <div className="relative hidden lg:block">
+                            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+                            <input className="bg-surface-container-low border-none rounded-lg pl-xl pr-md py-xs text-sm w-64 focus:ring-1 focus:ring-primary" placeholder="Search contracts..." type="text" />
+                        </div>
+                        <button onClick={() => navigate('/upload')} className="bg-primary text-on-primary px-md py-sm rounded-lg text-sm font-semibold hover:opacity-90 transition-all">Upload</button>
+                        <div className="flex gap-sm">
+                            <span className="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+                            <span className="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">settings</span>
+                        </div>
+                        <img alt="User" className="w-8 h-8 rounded-full border border-outline-variant object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPQTZB1agwQ5PTYV5FtJnMz5cCs98G0P77KO0d9Lar7RjiHkc22LS2e-gOmbgfoMDyp9w3h-yqqo-zj4cwh5PDiTSu-qfjB4fqCEHxQEtNZHoF_LlhkTNFHWT1PMZ4kfradpR6Wjzgs2SKRZEpZNeygURQ1pCZZO-85VqKK_bx8WNZZtclbK_kmes-ReOz8u01O2Y7Fwsu54jbFBjKvSw4sOaCBzNHv17IW59QXArgRKZBtwbIzrzuHF3R7ZMLTZ0_2hN7B58TsjTu" />
+                    </div>
+                </header>
+            );
+        };
+
+        const SideNavBar = ({ activePath = "Analytics" }) => {
+            const navigate = useNavigate();
+            const items = [
+                { icon: 'dashboard', label: 'Analytics', path: '/dashboard' },
+                { icon: 'description', label: 'Contracts', path: '/repository' },
+                { icon: 'psychology', label: 'Extraction', path: '/extraction' },
+                { icon: 'admin_panel_settings', label: 'Admin', path: '/admin' },
+                { icon: 'fact_check', label: 'Review', path: '/approvals' },
+                { icon: 'inventory_2', label: 'Archive', path: '/repository' }
+            ];
+
+            return (
+                <aside className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-sidebar-width z-40 bg-surface border-r border-outline-variant flex flex-col py-md px-sm gap-xs">
+                    <div className="px-sm mb-lg">
+                        <div className="flex items-center gap-sm mb-xs">
+                            <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
+                                <span className="material-symbols-outlined" style={{fontVariationSettings: '"FILL" 1'}}>balance</span>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black text-primary leading-tight">ContractLens</h2>
+                                <p className="text-xs text-on-surface-variant">Enterprise Tier</p>
+                            </div>
+                        </div>
+                        <button onClick={() => navigate('/upload')} className="w-full mt-md bg-primary text-on-primary py-sm rounded-lg text-sm font-semibold flex items-center justify-center gap-xs hover:opacity-90 transition-all">
+                            <span className="material-symbols-outlined text-[18px]">add</span>
+                            New Analysis
+                        </button>
+                    </div>
+                    <nav className="flex-1 flex flex-col gap-xs overflow-y-auto hide-scrollbar">
+                        {items.map(item => (
+                            <Link key={item.label} to={item.path} className={`flex items-center gap-sm px-sm py-sm rounded-lg transition-all duration-200 ${activePath === item.label ? 'bg-secondary-container text-on-secondary-container font-bold' : 'text-secondary hover:bg-surface-container-high'}`}>
+                                <span className="material-symbols-outlined">{item.icon}</span>
+                                <span className="text-sm">{item.label}</span>
+                            </Link>
+                        ))}
+                    </nav>
+                    <div className="border-t border-outline-variant pt-sm flex flex-col gap-xs">
+                        <a className="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high rounded-lg" href="#"><span className="material-symbols-outlined">help</span><span className="text-sm">Support</span></a>
+                        <Link to="/" className="flex items-center gap-sm px-sm py-sm text-secondary hover:bg-surface-container-high rounded-lg"><span className="material-symbols-outlined">logout</span><span className="text-sm">Logout</span></Link>
+                    </div>
+                </aside>
+            );
+        };
+
+        // --- Screens ---
+
+        const LoginPage = () => {
+            const navigate = useNavigate();
+            const [showPass, setShowPass] = useState(false);
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-md bg-surface-container-low font-sans">
+                    <main className="w-full max-w-[440px] flex flex-col gap-lg">
+                        <header className="flex flex-col items-center text-center gap-sm">
+                            <div className="flex items-center gap-xs">
+                                <span className="material-symbols-outlined text-primary text-[32px]" style={{fontVariationSettings: '"FILL" 1'}}>gavel</span>
+                                <h1 className="text-3xl font-bold text-primary tracking-tighter">ContractLens</h1>
+                            </div>
+                            <p className="text-xs text-on-surface-variant uppercase tracking-widest font-semibold">Enterprise Contract Intelligence</p>
+                        </header>
+                        <section className="bg-surface-container-lowest border border-outline-variant rounded-lg p-xl shadow-sm">
+                            <div className="mb-lg">
+                                <h2 className="text-xl font-bold text-primary mb-xs">Welcome back</h2>
+                                <p className="text-sm text-on-surface-variant">Please enter your credentials to access the legal repository.</p>
+                            </div>
+                            <form className="space-y-md" onSubmit={(e) => { e.preventDefault(); navigate('/dashboard'); }}>
+                                <div className="space-y-xs">
+                                    <label className="text-xs font-bold text-on-surface flex items-center gap-xs">
+                                        <span className="material-symbols-outlined text-[16px]">account_tree</span> SYSTEM ROLE
+                                    </label>
+                                    <div className="relative">
+                                        <select className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary py-sm px-md appearance-none outline-none">
+                                            <option>Admin</option>
+                                            <option>Operation User</option>
+                                            <option>Operation Head</option>
+                                        </select>
+                                        <div className="absolute right-md top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <span className="material-symbols-outlined text-on-surface-variant">expand_more</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-xs">
+                                    <label className="text-xs font-bold text-on-surface flex items-center gap-xs">
+                                        <span className="material-symbols-outlined text-[16px]">person</span> USERNAME
+                                    </label>
+                                    <input className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary py-sm px-md outline-none" placeholder="e.g. j.doe@firm.com" type="text" />
+                                </div>
+                                <div className="space-y-xs">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-xs font-bold text-on-surface flex items-center gap-xs">
+                                            <span className="material-symbols-outlined text-[16px]">lock</span> PASSWORD
+                                        </label>
+                                        <a className="text-xs text-primary hover:underline" href="#">Forgot?</a>
+                                    </div>
+                                    <div className="relative">
+                                        <input className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary py-sm px-md outline-none" placeholder="••••••••" type={showPass ? 'text' : 'password'} />
+                                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary">
+                                            <span className="material-symbols-outlined text-[20px]">{showPass ? 'visibility_off' : 'visibility'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-sm pt-xs">
+                                    <input className="w-4 h-4 rounded-sm border-outline-variant text-primary focus:ring-primary" id="remember" type="checkbox" />
+                                    <label htmlFor="remember" className="text-sm text-on-surface-variant cursor-pointer">Remember this device for 30 days</label>
+                                </div>
+                                <button className="w-full bg-primary text-on-primary font-bold text-sm py-md rounded-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-sm mt-lg" type="submit">
+                                    <span>SECURE ACCESS</span>
+                                    <span className="material-symbols-outlined text-[18px]">login</span>
+                                </button>
+                            </form>
+                        </section>
+                        <footer className="flex flex-col items-center gap-md opacity-60">
+                            <div className="flex items-center gap-lg">
+                                <div className="flex items-center gap-xs">
+                                    <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                                    <span className="text-[10px] font-bold">SOC2 COMPLIANT</span>
+                                </div>
+                                <div className="flex items-center gap-xs">
+                                    <span className="material-symbols-outlined text-[16px]">encrypted</span>
+                                    <span className="text-[10px] font-bold">AES-256 ENCRYPTION</span>
+                                </div>
+                            </div>
+                        </footer>
+                    </main>
+                </div>
+            );
+        };
+
+        const DashboardPage = () => {
+            return (
+                <div className="min-h-screen bg-background">
+                    <TopNavBar activeTab="Dashboard" />
+                    <SideNavBar activePath="Analytics" />
+                    <main className="ml-sidebar-width pt-14 p-lg min-h-screen">
+                        <div className="max-w-[1400px] mx-auto">
+                            <div className="flex justify-between items-end mb-lg">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-primary">Executive Insights</h1>
+                                    <p className="text-sm text-on-surface-variant">Contract lifecycle overview for Fiscal Year 2026</p>
+                                </div>
+                                <div className="flex gap-sm">
+                                    <button className="bg-surface-container-low border border-outline-variant px-md py-xs rounded-lg text-sm font-semibold flex items-center gap-xs text-on-surface-variant hover:bg-surface-container-high transition-all">
+                                        <span className="material-symbols-outlined text-[18px]">calendar_today</span> This Quarter
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
+                                <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col justify-between">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-xs">Executed Contracts (FY)</p>
+                                            <p className="text-3xl font-bold text-primary">1,284</p>
+                                        </div>
+                                        <div className="bg-primary-fixed text-primary p-sm rounded-lg">
+                                            <span className="material-symbols-outlined" style={{fontVariationSettings: '"FILL" 1'}}>history_edu</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-lg flex items-center gap-xs">
+                                        <span className="material-symbols-outlined text-on-primary-container text-[18px]">trending_up</span>
+                                        <span className="text-sm font-bold text-on-primary-container">+12.4%</span>
+                                        <span className="text-sm text-on-surface-variant">vs last year</span>
+                                    </div>
+                                </div>
+                                <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col justify-between">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-xs">Pending Review</p>
+                                            <p className="text-3xl font-bold text-primary">87</p>
+                                        </div>
+                                        <div className="bg-tertiary-fixed text-on-tertiary-fixed-variant p-sm rounded-lg">
+                                            <span className="material-symbols-outlined" style={{fontVariationSettings: '"FILL" 1'}}>pending_actions</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-lg">
+                                        <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden"><div className="bg-primary h-full w-[65%]"></div></div>
+                                        <p className="mt-xs text-xs text-on-surface-variant">65% assigned to Legal</p>
+                                    </div>
+                                </div>
+                                <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col justify-between">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-xs">Closing Soon (30d)</p>
+                                            <p className="text-3xl font-bold text-error">24</p>
+                                        </div>
+                                        <div className="bg-error-container text-on-error-container p-sm rounded-lg">
+                                            <span className="material-symbols-outlined" style={{fontVariationSettings: '"FILL" 1'}}>event_busy</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-lg flex items-center gap-xs">
+                                        <span className="material-symbols-outlined text-error text-[18px]">warning</span>
+                                        <span className="text-sm font-bold text-error">Critical Action Required</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg h-[400px]">
+                                <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col">
+                                    <h3 className="text-xl font-bold text-primary mb-xl">Department Backlog</h3>
+                                    <div className="flex-1 flex items-end justify-between gap-md px-md pb-md">
+                                        {[42, 87, 28, 56, 15].map((val, idx) => (
+                                            <div key={idx} className="flex-1 flex flex-col items-center gap-sm">
+                                                <div className={`w-full ${idx === 1 ? 'bg-primary' : 'bg-primary-fixed/50'} rounded-t-lg transition-all`} style={{height: `${val * 3}px`}}></div>
+                                                <span className="text-xs text-on-surface-variant">{['Sales', 'Legal', 'HR', 'Procure', 'IT'][idx]}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden flex flex-col">
+                                    <div className="p-lg border-b border-outline-variant bg-surface-container-low">
+                                        <h3 className="text-lg font-bold text-primary">Upcoming Expiries</h3>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto divide-y divide-outline-variant">
+                                        {[
+                                            { title: 'Azure MSA 2024', sub: 'Microsoft • $450k', days: '2 Days Left', date: 'Aug 24', urgent: true },
+                                            { title: 'Vendor Lease', sub: 'Apex Properties', days: '5 Days Left', date: 'Aug 27' },
+                                            { title: 'Stripe NDA', sub: 'Stripe Inc', days: '11 Days Left', date: 'Sep 02' }
+                                        ].map((item, i) => (
+                                            <div key={i} className="p-md hover:bg-surface-container transition-all flex items-center justify-between group cursor-pointer">
+                                                <div className="flex items-center gap-sm">
+                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.urgent ? 'bg-error-container text-on-error-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>
+                                                        <span className="material-symbols-outlined text-[20px]">{item.urgent ? 'assignment_late' : 'description'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-primary">{item.title}</h4>
+                                                        <p className="text-xs text-on-surface-variant">{item.sub}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className={`text-xs font-bold ${item.urgent ? 'text-error' : 'text-on-surface-variant'}`}>{item.days}</p>
+                                                    <p className="text-xs text-on-surface-variant">{item.date}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const ExtractionPage = () => {
+            const [selectedCategory, setSelectedCategory] = useState('Commercial');
+            return (
+                <div className="min-h-screen bg-background">
+                    <TopNavBar activeTab="Dashboard" />
+                    <SideNavBar activePath="Extraction" />
+                    <main className="ml-sidebar-width pt-14 p-lg h-screen flex flex-col gap-lg overflow-hidden">
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <h2 className="text-2xl font-bold text-primary">Extraction Master Maintenance</h2>
+                                <p className="text-secondary text-sm">Configure data point logic and association types for automated OCR processing.</p>
+                            </div>
+                            <div className="flex gap-sm">
+                                <button className="px-md py-sm border border-outline-variant rounded-lg text-xs font-bold hover:bg-surface-container-low transition-all">Export Schema</button>
+                                <button className="px-md py-sm bg-primary text-on-primary rounded-lg text-xs font-bold flex items-center gap-xs shadow-sm hover:opacity-90 active:scale-95 transition-all">
+                                    <span className="material-symbols-outlined text-[16px]">add_box</span> Define Parameter
+                                </button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-12 gap-lg flex-1 overflow-hidden">
+                            <div className="col-span-12 lg:col-span-4 flex flex-col gap-lg">
+                                <div className="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+                                    <h3 className="text-lg font-bold text-primary mb-md flex items-center gap-xs">
+                                        <span className="material-symbols-outlined">settings_input_component</span> Extraction Logic
+                                    </h3>
+                                    <form className="space-y-md">
+                                        <div className="space-y-xs">
+                                            <label className="text-xs font-bold text-on-surface-variant">Contract Type</label>
+                                            <select className="w-full bg-surface-container-low border-none rounded-lg text-sm py-sm focus:ring-1 focus:ring-primary">
+                                                <option>Master Service Agreement</option>
+                                                <option>Non-Disclosure Agreement</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-xs">
+                                            <label className="text-xs font-bold text-on-surface-variant">Agreement Category</label>
+                                            <div className="flex flex-wrap gap-xs">
+                                                {['Commercial', 'Vendor', 'Internal'].map(cat => (
+                                                    <span key={cat} onClick={() => setSelectedCategory(cat)} className={`px-sm py-1 rounded-full text-xs cursor-pointer transition-all ${selectedCategory === cat ? 'bg-secondary-container text-on-secondary-container font-bold' : 'bg-surface-container-high text-secondary'}`}>
+                                                        {cat}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-xs">
+                                            <label className="text-xs font-bold text-on-surface-variant">Parameter Head</label>
+                                            <input className="w-full bg-surface-container-low border-none rounded-lg text-sm py-sm" placeholder="e.g., Termination Clause" type="text" />
+                                        </div>
+                                        <div className="space-y-xs">
+                                            <label className="text-xs font-bold text-on-surface-variant">Parameter Logic (P1+P2...)</label>
+                                            <input className="w-full bg-surface-container-low border-none rounded-lg font-mono text-sm py-sm font-bold" placeholder="P1 + P2 + P3" type="text" />
+                                        </div>
+                                        <button className="w-full py-md bg-secondary text-on-secondary rounded-lg font-bold text-sm shadow-sm hover:opacity-90 transition-all" type="button">Update Maintenance Log</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div className="col-span-12 lg:col-span-8 flex flex-col gap-lg overflow-hidden">
+                                <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col h-full">
+                                    <div className="px-lg py-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
+                                        <h3 className="text-xs font-bold text-primary uppercase tracking-wider">Active Parameter Schema</h3>
+                                    </div>
+                                    <div className="overflow-x-auto flex-1 custom-scrollbar">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-surface-container-low border-b border-outline-variant">
+                                                    <th className="px-lg py-sm text-xs font-bold text-secondary uppercase whitespace-nowrap">Parameter Head</th>
+                                                    <th className="px-lg py-sm text-xs font-bold text-secondary uppercase whitespace-nowrap">Logic</th>
+                                                    <th className="px-lg py-sm text-xs font-bold text-secondary uppercase whitespace-nowrap text-center">Confidence</th>
+                                                    <th className="px-lg py-sm text-xs font-bold text-secondary uppercase whitespace-nowrap text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-outline-variant">
+                                                {[
+                                                    { head: 'Liability Cap', logic: 'P1 + P4 + P9', conf: 'High' },
+                                                    { head: 'Notice Period', logic: 'P2 + P3', conf: 'Med' },
+                                                    { head: 'Governing Law', logic: 'P11', conf: 'High' }
+                                                ].map((row, i) => (
+                                                    <tr key={i} className="hover:bg-surface-container-low transition-colors">
+                                                        <td className="px-lg py-md text-sm font-bold text-primary">{row.head}</td>
+                                                        <td className="px-lg py-md"><span className="font-mono text-xs bg-surface-container px-sm py-0.5 rounded text-secondary">{row.logic}</span></td>
+                                                        <td className="px-lg py-md text-center"><span className="text-[10px] font-bold bg-primary-container/10 px-2 py-1 rounded">{row.conf}</span></td>
+                                                        <td className="px-lg py-md text-right"><button className="material-symbols-outlined text-outline hover:text-primary">edit_square</button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const UploadPage = () => {
+            const navigate = useNavigate();
+            return (
+                <div className="min-h-screen bg-background">
+                    <TopNavBar activeTab="Repository" />
+                    <SideNavBar activePath="Contracts" />
+                    <main className="ml-sidebar-width pt-14 h-screen flex overflow-hidden">
+                        <section className="flex-1 p-lg flex flex-col gap-lg overflow-y-auto custom-scrollbar">
+                            <div>
+                                <h1 className="text-3xl font-bold text-primary">Upload Contract</h1>
+                                <p className="text-sm text-on-surface-variant">Drag and drop documents to initiate AI-powered metadata extraction.</p>
+                            </div>
+                            <div className="grid grid-cols-12 gap-md flex-1 min-h-[400px]">
+                                <div onClick={() => navigate('/verification')} className="col-span-12 md:col-span-8 border-2 border-dashed border-outline-variant bg-surface-container-lowest rounded-xl flex flex-col items-center justify-center p-xl group hover:border-primary transition-all cursor-pointer relative overflow-hidden">
+                                    <div className="w-16 h-16 bg-primary-fixed rounded-full flex items-center justify-center mb-md group-hover:scale-110 transition-transform">
+                                        <span className="material-symbols-outlined text-primary text-3xl">upload_file</span>
+                                    </div>
+                                    <p className="text-xl font-bold text-on-surface mb-xs">Click or drag files to this area to upload</p>
+                                    <p className="text-xs text-on-surface-variant text-center max-w-xs">PDF, DOCX, XLSX supported. Enterprise security applied.</p>
+                                </div>
+                                <div className="col-span-12 md:col-span-4 flex flex-col gap-md">
+                                    <div className="flex-1 bg-primary text-on-primary p-lg rounded-xl relative overflow-hidden">
+                                        <h3 className="text-lg font-bold mb-xs">AI Extraction</h3>
+                                        <p className="text-xs opacity-80">Our engine identifies clauses with 99.4% accuracy.</p>
+                                        <span className="material-symbols-outlined absolute bottom-[-20px] right-[-20px] text-[120px] opacity-10">psychology</span>
+                                    </div>
+                                    <div className="flex-1 bg-white border border-outline-variant p-lg rounded-xl">
+                                        <h3 className="text-lg font-bold text-primary mb-xs">Processing Queue</h3>
+                                        <div className="mt-md space-y-sm">
+                                            <div className="flex items-center gap-sm">
+                                                <div className="w-1 h-8 bg-amber-500 rounded-full"></div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs font-bold truncate">MSA_Global_Services_2024.pdf</p>
+                                                    <div className="w-full bg-surface-container-high h-1 rounded-full mt-1">
+                                                        <div className="bg-amber-500 h-1 rounded-full" style={{width: '65%'}}></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <aside className="w-[400px] bg-white border-l border-outline-variant flex flex-col shadow-sm">
+                            <div className="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                                <h2 className="text-lg font-bold text-primary">Tagging & Metadata</h2>
+                            </div>
+                            <form className="flex-1 overflow-y-auto p-lg space-y-lg custom-scrollbar">
+                                <div className="space-y-md">
+                                    <p className="text-xs font-bold text-primary uppercase tracking-wider">Entity Details</p>
+                                    <div className="space-y-xs">
+                                        <label className="text-xs font-semibold text-on-surface-variant">Organization</label>
+                                        <select className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary py-sm text-sm border-t-0 border-x-0 rounded-none">
+                                            <option>LexIntel Corporate</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-xs">
+                                        <label className="text-xs font-semibold text-on-surface-variant">Counterparty</label>
+                                        <input className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary py-sm text-sm border-t-0 border-x-0 rounded-none" placeholder="Search or create..." />
+                                    </div>
+                                </div>
+                                <div className="space-y-md">
+                                    <p className="text-xs font-bold text-primary uppercase tracking-wider">Additional Info</p>
+                                    <textarea className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary py-sm text-sm border-t-0 border-x-0 rounded-none resize-none" rows="3" placeholder="Notes on urgency..."></textarea>
+                                </div>
+                            </form>
+                            <div className="p-lg bg-white border-t border-outline-variant">
+                                <button onClick={() => navigate('/verification')} className="w-full py-md bg-primary text-on-primary rounded-lg font-bold shadow-lg hover:bg-primary-container transition-all">Submit & Start Extraction</button>
+                                <button className="w-full mt-sm py-sm text-secondary text-xs font-bold hover:bg-surface-container transition-colors">Save as Draft</button>
+                            </div>
+                        </aside>
+                    </main>
+                </div>
+            );
+        };
+
+        const VerificationPage = () => {
+            const navigate = useNavigate();
+            const [activeRow, setActiveRow] = useState(1);
+            
+            const parameters = [
+                { id: 1, name: 'Effective Date', data: '2024-01-15', score: '99%', header: 'Administrative' },
+                { id: 2, name: 'Liability Cap', data: '$5,000,000.00', score: '94%', header: 'Liability' },
+                { id: 3, name: 'Termination Period', data: '90 Days Convenience', score: '88%', header: 'Operations' },
+                { id: 4, name: 'Governing Law', data: 'Delaware, USA', score: '100%', header: 'Compliance' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-background overflow-hidden">
+                    <TopNavBar activeTab="Approvals" />
+                    <SideNavBar activePath="Review" />
+                    <main className="ml-sidebar-width pt-14 h-screen flex overflow-hidden">
+                        <section className="flex-1 bg-surface-container-low border-r border-outline-variant flex flex-col overflow-hidden">
+                            <div className="h-10 border-b border-outline-variant bg-surface flex items-center justify-between px-md shrink-0">
+                                <div className="flex items-center gap-sm">
+                                    <span className="text-xs font-bold text-primary">MSA_Global_Logistics_2024.pdf</span>
+                                    <span className="bg-surface-container-highest text-[10px] px-1 rounded font-bold uppercase">OCR Verified</span>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-xl flex flex-col items-center gap-lg bg-surface-dim">
+                                <div className="w-[600px] bg-white p-xl min-h-[842px] pdf-page-shadow relative font-serif text-[13px] leading-relaxed text-slate-800">
+                                    <div className="text-center font-bold mb-xl text-lg uppercase tracking-widest text-black">Master Services Agreement</div>
+                                    <p className="mb-md">This Agreement is made as of <span className={`citation-highlight px-1 rounded cursor-pointer ${activeRow === 1 ? 'active-citation' : ''}`} onClick={() => setActiveRow(1)}>January 15, 2024</span> (the "Effective Date") by and between LexGlobal Corp. and Enterprise Flow Inc.</p>
+                                    <h3 className="font-bold mt-lg mb-xs border-b border-slate-200">1. SCOPE OF SERVICES</h3>
+                                    <p className="mb-md">...total aggregate liability shall not exceed <span className={`citation-highlight px-1 rounded cursor-pointer ${activeRow === 2 ? 'active-citation' : ''}`} onClick={() => setActiveRow(2)}>USD 5,000,000.00</span> for any single claim...</p>
+                                    <h3 className="font-bold mt-lg mb-xs border-b border-slate-200">2. TERMINATION</h3>
+                                    <p className="mb-md">Either party may terminate this agreement for convenience upon <span className={`citation-highlight px-1 rounded cursor-pointer ${activeRow === 3 ? 'active-citation' : ''}`} onClick={() => setActiveRow(3)}>90 days prior written notice</span>...</p>
+                                    <h3 className="font-bold mt-lg mb-xs border-b border-slate-200">3. GOVERNING LAW</h3>
+                                    <p className="mb-md">...construed in accordance with the laws of <span className={`citation-highlight px-1 rounded cursor-pointer ${activeRow === 4 ? 'active-citation' : ''}`} onClick={() => setActiveRow(4)}>the State of Delaware, USA</span>.</p>
+                                </div>
+                            </div>
+                        </section>
+                        <section className="w-[500px] bg-white flex flex-col overflow-hidden">
+                            <div className="h-10 border-b border-outline-variant bg-surface flex items-center px-md shrink-0 justify-between">
+                                <span className="text-xs font-bold text-primary">AI EXTRACTED PARAMETERS</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="sticky top-0 bg-white z-10">
+                                        <tr className="bg-surface-container-low">
+                                            <th className="px-md py-sm text-[10px] text-outline uppercase tracking-wider border-b border-outline-variant">Header / Name</th>
+                                            <th className="px-md py-sm text-[10px] text-outline uppercase tracking-wider border-b border-outline-variant">Extracted Data</th>
+                                            <th className="px-md py-sm text-[10px] text-outline uppercase tracking-wider border-b border-outline-variant text-center">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-outline-variant">
+                                        {parameters.map(p => (
+                                            <tr key={p.id} className={`hover:bg-surface-container-low cursor-pointer transition-colors ${activeRow === p.id ? 'bg-secondary-container' : ''}`} onClick={() => setActiveRow(p.id)}>
+                                                <td className="px-md py-md">
+                                                    <div className="text-[10px] font-bold text-secondary uppercase mb-xs">{p.header}</div>
+                                                    <div className="text-sm font-bold text-primary">{p.name}</div>
+                                                </td>
+                                                <td className="px-md py-md text-sm text-on-surface-variant">{p.data}</td>
+                                                <td className="px-md py-md text-center">
+                                                    <span className="bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded text-[10px] font-bold">{p.score}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="p-md bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
+                                <div className="flex items-center gap-xs">
+                                    <span className="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+                                    <span className="text-xs font-bold">4/12 Validated</span>
+                                </div>
+                                <div className="flex gap-sm">
+                                    <button onClick={() => navigate('/approvals')} className="px-md py-sm bg-primary text-on-primary rounded-lg text-xs font-bold shadow-md hover:opacity-90">Approve All</button>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+                </div>
+            );
+        };
+
+        const ApprovalsPage = () => {
+            const navigate = useNavigate();
+            const contracts = [
+                { title: 'Global Master Services Agreement', org: 'Starlight Industries Ltd.', type: 'Procurement', date: 'Oct 24, 2023', status: 'Pending Review' },
+                { title: 'Software License Addendum v4', org: 'DataNexus Cloud Services', type: 'Technology', date: 'Oct 23, 2023', status: 'Returned' },
+                { title: 'Non-Disclosure Agreement (NDA)', org: 'Apex Financial Group', type: 'Legal', date: 'Oct 23, 2023', status: 'Approved' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-background">
+                    <TopNavBar activeTab="Approvals" />
+                    <SideNavBar activePath="Review" />
+                    <main className="ml-sidebar-width pt-14 h-screen flex flex-col">
+                        <div className="px-xl py-lg flex justify-between items-end">
+                            <div>
+                                <h1 className="text-3xl font-bold text-primary">Approval Queue</h1>
+                                <p className="text-sm text-on-surface-variant">Review and manage pending legal agreements.</p>
+                            </div>
+                            <div className="flex gap-sm">
+                                <div className="bg-surface-container-low rounded-lg p-xs flex gap-xs border border-outline-variant">
+                                    <button className="px-md py-1 bg-surface-container-lowest shadow-sm rounded text-xs font-bold text-primary">All (24)</button>
+                                    <button className="px-md py-1 hover:bg-surface-container-high rounded text-xs font-bold text-on-surface-variant">Pending (18)</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex-1 px-xl pb-xl overflow-hidden">
+                            <div className="h-full bg-surface-container-lowest rounded-xl border border-outline-variant flex flex-col shadow-sm overflow-hidden">
+                                <div className="px-md py-sm border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                                    <div className="flex items-center gap-md">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Queue Priority</span>
+                                        <button className="flex items-center gap-xs text-xs text-primary font-bold"><span className="material-symbols-outlined text-[18px]">filter_list</span> Filter</button>
+                                    </div>
+                                    <div className="text-xs text-on-surface-variant">Showing 1-10 of 24 contracts</div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="sticky top-0 bg-surface-container-lowest z-10 border-b border-outline-variant">
+                                            <tr>
+                                                <th className="pl-md py-md text-xs font-bold text-on-surface-variant uppercase">Contract Title</th>
+                                                <th className="px-md py-md text-xs font-bold text-on-surface-variant uppercase">Organization</th>
+                                                <th className="px-md py-md text-xs font-bold text-on-surface-variant uppercase">Type</th>
+                                                <th className="px-md py-md text-xs font-bold text-on-surface-variant uppercase">Status</th>
+                                                <th className="pr-md py-md text-xs font-bold text-on-surface-variant uppercase text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-outline-variant">
+                                            {contracts.map((c, i) => (
+                                                <tr key={i} className="hover:bg-surface-container-low group transition-colors">
+                                                    <td className="pl-md py-md">
+                                                        <div className="flex items-center gap-sm">
+                                                            <span className="material-symbols-outlined text-primary">description</span>
+                                                            <span className="text-sm font-bold text-primary">{c.title}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-md py-md text-sm">{c.org}</td>
+                                                    <td className="px-md py-md"><span className="bg-secondary-container text-on-secondary-container px-sm py-0.5 rounded text-[11px] font-bold uppercase">{c.type}</span></td>
+                                                    <td className="px-md py-md">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${c.status === 'Approved' ? 'bg-primary-fixed text-primary border-primary' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{c.status}</span>
+                                                    </td>
+                                                    <td className="pr-md py-md text-right">
+                                                        <div className="flex justify-end gap-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => navigate('/verification')} className="p-1 hover:bg-primary-fixed text-on-surface-variant hover:text-primary rounded"><span className="material-symbols-outlined text-[20px]">visibility</span></button>
+                                                            <button className="p-1 bg-primary text-on-primary rounded hover:opacity-90"><span className="material-symbols-outlined text-[20px]">check_circle</span></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const RepositoryPage = () => {
+            const navigate = useNavigate();
+            return (
+                <div className="min-h-screen bg-background">
+                    <TopNavBar activeTab="Repository" />
+                    <SideNavBar activePath="Contracts" />
+                    <main className="ml-sidebar-width pt-14 min-h-screen">
+                        <div className="p-lg max-w-[1400px] mx-auto">
+                            <section className="mb-xl">
+                                <h1 className="text-3xl font-bold text-primary mb-md">Repository Hub</h1>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+                                        <span className="material-symbols-outlined text-primary text-xl" style={{fontVariationSettings: '"FILL" 1'}}>search_spark</span>
+                                    </div>
+                                    <input className="block w-full pl-[52px] pr-[120px] py-xl bg-surface-container-lowest border border-outline-variant rounded-xl text-lg shadow-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Search using natural language, e.g., 'Show all MSA from 2023'" type="text" />
+                                    <button className="absolute right-sm top-1/2 -translate-y-1/2 bg-primary text-on-primary px-lg py-sm rounded-lg font-bold shadow-lg">Query</button>
+                                </div>
+                            </section>
+                            <div className="flex gap-lg">
+                                <aside className="w-metadata-panel flex-shrink-0 flex flex-col gap-lg">
+                                    <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-md">Metadata Filters</h3>
+                                        <div className="flex flex-col gap-lg">
+                                            <div className="space-y-sm">
+                                                <label className="text-xs font-bold">Year</label>
+                                                <div className="grid grid-cols-2 gap-xs">
+                                                    <button className="py-1.5 px-sm border border-primary rounded bg-primary-fixed text-primary font-bold text-xs">2023</button>
+                                                    <button className="py-1.5 px-sm border border-outline-variant rounded bg-surface-container text-xs">2024</button>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-sm">
+                                                <label className="text-xs font-bold">Department</label>
+                                                <div className="space-y-xs">
+                                                    {['Legal', 'Procurement', 'Finance'].map(dep => (
+                                                        <label key={dep} className="flex items-center gap-sm cursor-pointer"><input type="checkbox" className="rounded text-primary focus:ring-primary" /><span className="text-sm">{dep}</span></label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-primary text-on-primary rounded-xl p-md flex flex-col gap-sm shadow-xl">
+                                        <div className="flex justify-between items-start">
+                                            <span className="material-symbols-outlined">database</span>
+                                            <span className="bg-primary-fixed/20 px-2 py-0.5 rounded text-[10px] font-bold">LIVE SYNC</span>
+                                        </div>
+                                        <h4 className="text-2xl font-bold">12,482</h4>
+                                        <p className="text-xs opacity-80">Contracts Indexed</p>
+                                    </div>
+                                </aside>
+                                <div className="flex-1">
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-lg">
+                                        <div onClick={() => navigate('/verification')} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md hover:shadow-md transition-all cursor-pointer group">
+                                            <div className="flex justify-between items-start mb-md">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-sm mb-1">
+                                                        <span className="material-symbols-outlined text-primary text-xl">description</span>
+                                                        <h3 className="text-lg font-bold text-primary group-hover:text-secondary transition-colors">Global Logistics MSA - 2023</h3>
+                                                    </div>
+                                                    <p className="text-on-surface-variant text-xs">ID: CNTR-9982-GL</p>
+                                                </div>
+                                                <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase">Active</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-sm mb-lg">
+                                                <div className="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+                                                    <p className="text-[10px] font-bold text-on-surface-variant uppercase mb-xs">Party A</p>
+                                                    <p className="text-xs font-bold truncate">Logistics Group Int.</p>
+                                                </div>
+                                                <div className="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+                                                    <p className="text-[10px] font-bold text-on-surface-variant uppercase mb-xs">Value</p>
+                                                    <p className="text-xs font-bold">$1,200,000 /yr</p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-lg pt-md border-t border-outline-variant flex items-center justify-between">
+                                                <div className="flex -space-x-2"><div className="w-6 h-6 rounded-full bg-primary-fixed border border-white flex items-center justify-center text-[10px] font-bold">AI</div><div className="w-6 h-6 rounded-full bg-surface-container border border-white flex items-center justify-center text-[10px] font-bold">JD</div></div>
+                                                <button className="bg-primary text-on-primary text-xs font-bold px-md py-1.5 rounded-lg flex items-center gap-xs">Open Document <span className="material-symbols-outlined text-[16px]">arrow_forward</span></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        // --- App Component ---
+
+        const App = () => {
+            return (
+                <MemoryRouter>
+                    <Routes>
+                        <Route path="/" element={<LoginPage />} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/extraction" element={<ExtractionPage />} />
+                        <Route path="/upload" element={<UploadPage />} />
+                        <Route path="/verification" element={<VerificationPage />} />
+                        <Route path="/approvals" element={<ApprovalsPage />} />
+                        <Route path="/repository" element={<RepositoryPage />} />
+                        <Route path="/admin" element={<ExtractionPage />} />
+                    </Routes>
+                </MemoryRouter>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      - oracle
+    networks:
+      - plexus-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - plexus-network
+    restart: unless-stopped
+
+  # Note: Oracle 26ai should be configured separately on OCI
+  # This is a placeholder for local development reference
+  oracle:
+    image: container-registry.oracle.com/database/express:latest
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PWD=OraclePassword123
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    networks:
+      - plexus-network
+    restart: unless-stopped
+
+networks:
+  plexus-network:
+    driver: bridge
+
+volumes:
+  oracle-data:

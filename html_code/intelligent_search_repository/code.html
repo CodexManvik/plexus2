@@ -1,0 +1,532 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LexIntel | Repository Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e0e3e5;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#d2e4fb",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#211200",
+                        "on-surface": "#191c1e",
+                        "surface-container-highest": "#e0e3e5",
+                        "background": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "outline": "#74777d",
+                        "tertiary-fixed": "#feddb5",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d8dadc",
+                        "surface-tint": "#4f6073",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "inverse-primary": "#b7c8de",
+                        "on-surface-variant": "#44474c",
+                        "primary-container": "#1a2b3c",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#38485a",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary-fixed": "#281802",
+                        "surface-container-high": "#e6e8ea",
+                        "secondary-container": "#d0e1fb",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-container": "#8192a7",
+                        "tertiary-container": "#38260b",
+                        "on-primary-fixed": "#0b1d2d",
+                        "surface": "#f7f9fb",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "tertiary-fixed-dim": "#e1c29b",
+                        "on-tertiary-fixed-variant": "#584326",
+                        "on-tertiary-container": "#a88c69",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e0e3e5",
+                        "primary": "#041627",
+                        "outline-variant": "#c4c6cd",
+                        "on-background": "#191c1e",
+                        "secondary": "#505f76",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#b7c8de",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-container": "#eceef0",
+                        "secondary-fixed": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "sidebar-width": "240px",
+                        "gutter": "12px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "metadata-panel": "320px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "mono-md": ["JetBrains Mono"],
+                        "display-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "mono-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-sm": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant dark:border-outline flex justify-between items-center h-14 px-lg w-full">
+<div class="flex items-center gap-xl">
+<span class="text-headline-lg font-headline-lg font-bold text-primary dark:text-primary-fixed">ContractLens Manager</span>
+<nav class="hidden md:flex gap-md h-full items-center">
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-on-surface-variant pb-2 hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">Dashboard</a>
+<a class="font-label-md text-label-md text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed pb-2 hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">Repository</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-on-surface-variant pb-2 hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">Approvals</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="bg-surface-container-low border-none rounded-lg pl-xl pr-sm py-1.5 w-64 text-body-sm focus:ring-1 focus:ring-primary" placeholder="Global search..." type="text">
+</div>
+<button class="bg-primary text-on-primary px-md py-1.5 rounded-lg font-label-md hover:opacity-90 transition-opacity">Upload</button>
+<div class="flex items-center gap-sm ml-sm">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">settings</span>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A professional headshot of a corporate lawyer in a modern, brightly lit office environment. The image has a clean, high-key lighting style with soft focus on the background to emphasize the subject. The color palette is composed of crisp whites, soft grays, and professional navy blues, reflecting a trustworthy and intelligent atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD53TPMsMqhpAo-Basb11uDovlkv2164vbBwe7GtJWnkTGEcexpS1MiwrsoTZxXOCNei2Rw-pqDsPtugz-jgY0FkoHCeUo6aLwTzsK0d3WAGouDqUwXyl6_LdRTuJOe6wKUnTnX-yChMVGJ0XdGfrAeKsQGBktALGHbr-2jCOZDxB-5eSqf7qyc5eh1OGZJuKgcXZGo3awFob0fqI0eFbPJmeOpl19T1M7-sfWPIj91NFpWixuDbGhZ4hnrEU5HXHaDKJFKF0syBhHX">
+</div>
+</div>
+</header>
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-sidebar-width z-40 bg-surface dark:bg-surface-container-low border-r border-outline-variant dark:border-outline flex flex-col py-md px-sm gap-xs">
+<div class="px-sm mb-lg">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[20px]">gavel</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-black text-primary leading-none"><br></h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-sm px-sm py-2 text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="">Analytics</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-2 bg-secondary-container dark:bg-primary-container text-on-secondary-container dark:text-on-primary-container font-bold rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="">Contracts</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-2 text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="">Extraction</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-2 text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span class="">Admin</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-2 text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="">Review</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-2 text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="">Archive</span>
+</a>
+</div>
+<button class="mx-sm my-md py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-lg font-label-md hover:bg-primary-fixed-dim transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Analysis
+        </button>
+<div class="mt-auto border-t border-outline-variant pt-sm flex flex-col gap-1">
+<a class="flex items-center gap-sm px-sm py-2 text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="">Support</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-2 text-secondary dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container rounded-lg transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-sidebar-width pt-14 min-h-screen">
+<div class="p-lg max-w-[1400px] mx-auto">
+<!-- Hero Search Section -->
+<section class="mb-xl">
+<div class="flex flex-col gap-sm mb-md">
+<h1 class="font-display-sm text-display-sm text-primary">Repository Hub</h1>
+<p class="text-on-surface-variant font-body-lg">Access intelligent contract extracts and document history across the enterprise.</p>
+</div>
+<!-- Intelligent Search Bar -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">search_spark</span>
+</div>
+<input class="block w-full pl-[52px] pr-[120px] py-xl bg-surface-container-lowest border border-outline-variant rounded-xl text-body-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none" placeholder="Search using natural language, e.g., 'Show all master service agreements from 2023 for Finance'" type="text">
+<div class="absolute inset-y-0 right-sm flex items-center">
+<kbd class="hidden sm:inline-flex items-center px-sm py-1 font-mono-md text-mono-md text-on-surface-variant bg-surface-container border border-outline-variant rounded mr-sm">⌘ K</kbd>
+<button class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform">Query</button>
+</div>
+</div>
+</section>
+<div class="flex gap-lg">
+<!-- Filters Sidebar (Metadata) -->
+<aside class="w-metadata-panel flex-shrink-0 flex flex-col gap-lg">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-md text-label-md uppercase tracking-wider text-on-surface-variant">Metadata Filters</h3>
+<button class="text-primary font-label-md hover:underline">Clear all</button>
+</div>
+<div class="flex flex-col gap-lg">
+<!-- Year Filter -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-md text-on-surface">Year</label>
+<div class="grid grid-cols-2 gap-xs">
+<button class="py-1.5 px-sm border border-outline-variant rounded bg-surface-container text-body-sm hover:border-primary transition-colors">2024</button>
+<button class="py-1.5 px-sm border border-primary rounded bg-primary-fixed text-on-primary-fixed font-bold text-body-sm">2023</button>
+<button class="py-1.5 px-sm border border-outline-variant rounded bg-surface-container text-body-sm hover:border-primary transition-colors">2022</button>
+<button class="py-1.5 px-sm border border-outline-variant rounded bg-surface-container text-body-sm hover:border-primary transition-colors">Archive</button>
+</div>
+</div>
+<!-- Department Filter -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-md text-on-surface">Department</label>
+<div class="flex flex-col gap-xs">
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="w-4 h-4 rounded text-primary border-outline-variant focus:ring-primary" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Legal &amp; Compliance</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input class="w-4 h-4 rounded text-primary border-outline-variant focus:ring-primary" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Procurement</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input class="w-4 h-4 rounded text-primary border-outline-variant focus:ring-primary" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Finance</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input class="w-4 h-4 rounded text-primary border-outline-variant focus:ring-primary" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Sales &amp; GTM</span>
+</label>
+</div>
+</div>
+<!-- Type Filter -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-md text-on-surface">Contract Type</label>
+<select class="w-full bg-surface-container-low border-outline-variant rounded-lg text-body-sm py-2">
+<option>All Types</option>
+<option>Master Service Agreement</option>
+<option>Non-Disclosure Agreement</option>
+<option>Employment Contract</option>
+<option>Real Estate Lease</option>
+</select>
+</div>
+<!-- Confidence Score Slider -->
+<div class="flex flex-col gap-sm pt-sm border-t border-outline-variant">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-on-surface">Min. Extraction Accuracy</label>
+<span class="text-primary font-bold text-label-md">85%</span>
+</div>
+<input class="w-full accent-primary h-1.5 bg-surface-container-highest rounded-full cursor-pointer" max="100" min="50" type="range" value="85">
+</div>
+</div>
+</div>
+<!-- Usage Stats Card -->
+<div class="bg-primary text-on-primary rounded-xl p-md flex flex-col gap-sm shadow-xl">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary-fixed">database</span>
+<span class="bg-primary-fixed/20 px-sm py-0.5 rounded text-[10px] font-bold tracking-tighter uppercase">Live Sync</span>
+</div>
+<div>
+<h4 class="text-headline-md font-bold">12,482</h4>
+<p class="text-body-sm opacity-80">Total Contracts Indexed</p>
+</div>
+<div class="mt-xs pt-xs border-t border-on-primary/20">
+<div class="flex justify-between text-[11px] font-bold">
+<span class="">REMAINING QUOTA</span>
+<span class="">742 / 1000</span>
+</div>
+<div class="w-full h-1 bg-on-primary/10 rounded-full mt-1">
+<div class="bg-primary-fixed h-full rounded-full w-3/4"></div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Grid View -->
+<div class="flex-1">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-md">
+<h2 class="font-headline-lg text-headline-lg text-primary">Recent Indexing</h2>
+<span class="bg-surface-container-highest text-on-surface-variant px-sm py-1 rounded-full text-[11px] font-bold">Sorted by Relevance</span>
+</div>
+<div class="flex bg-surface-container rounded p-0.5">
+<button class="p-1.5 rounded bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-[18px]">grid_view</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">list</span>
+</button>
+</div>
+</div>
+<!-- Bento Grid for Results -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-lg">
+<!-- Contract Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-shadow group">
+<div class="p-md flex flex-col h-full">
+<div class="flex justify-between items-start mb-md">
+<div class="flex flex-col">
+<div class="flex items-center gap-sm mb-1">
+<span class="material-symbols-outlined text-primary text-xl">description</span>
+<h3 class="font-headline-md text-headline-md text-primary leading-tight group-hover:text-secondary transition-colors">Global Logistics MSA - 2023</h3>
+</div>
+<p class="text-on-surface-variant font-label-md">ID: CNTR-9982-GL</p>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-sm py-0.5 rounded text-[10px] font-bold uppercase">Active</span>
+</div>
+<div class="grid grid-cols-2 gap-sm mb-lg">
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+<p class="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">Party A</p>
+<p class="text-body-sm font-bold truncate">Logistics Group Int.</p>
+</div>
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+<p class="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">Value</p>
+<p class="text-body-sm font-bold">$1,200,000 /yr</p>
+</div>
+</div>
+<div class="flex flex-col gap-sm flex-1">
+<div class="flex items-center gap-sm">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<p class="text-body-sm text-on-surface truncate italic">"Auto-renewal occurs every 24 months unless notice..."</p>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<p class="text-body-sm text-on-surface truncate italic">"Governing Law: New York State High Court..."</p>
+</div>
+</div>
+<div class="mt-lg pt-md border-t border-outline-variant flex items-center justify-between">
+<div class="flex -space-x-2">
+<img alt="AI Extraction" class="w-6 h-6 rounded-full border border-surface-container-lowest bg-primary-fixed" data-alt="A futuristic and sleek abstract representation of artificial intelligence processing data. Glowing nodes of light in primary blue and teal connect across a clean white background, creating a network pattern. The lighting is ethereal and sophisticated, embodying high-end technology and data precision within a corporate setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY0Ci7YayvvQD3ICvjFNghvMlDcqr5DSPSNcu_LfSY1eziiQWBB2t4eWj9PmTpX5SZXhnDyrlxPDjCu3venhRS1Hy8rXxII3n6mqVJYEbxiEvkdux88yOIRJT_ToV6DSO6AfyoUH0TjaP3m6kgXLHW62HMO1UxZISZUhiEhQsQTgsCIuj3kMn_xLTIDgZcJ_Eo0fIcPOOuBw-D3pUUK86K72KLXwzxkx_2aBMfYb_hiqRiO3Ocn25sBtLx0zTDBHQwClZZnGFarm5g">
+<div class="w-6 h-6 rounded-full border border-surface-container-lowest bg-surface-container flex items-center justify-center text-[10px] font-bold">JD</div>
+</div>
+<div class="flex gap-sm">
+<button class="font-label-md text-primary flex items-center gap-xs hover:bg-primary-fixed p-1.5 rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                                            History
+                                        </button>
+<button class="bg-primary text-on-primary font-label-md px-md py-1.5 rounded-lg flex items-center gap-xs">
+                                            Open Document
+                                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Contract Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-shadow group">
+<div class="p-md flex flex-col h-full">
+<div class="flex justify-between items-start mb-md">
+<div class="flex flex-col">
+<div class="flex items-center gap-sm mb-1">
+<span class="material-symbols-outlined text-primary text-xl">verified_user</span>
+<h3 class="font-headline-md text-headline-md text-primary leading-tight group-hover:text-secondary transition-colors">NDA - TechSolutions Ltd</h3>
+</div>
+<p class="text-on-surface-variant font-label-md">ID: NDA-2024-001</p>
+</div>
+<span class="bg-error-container text-on-error-container px-sm py-0.5 rounded text-[10px] font-bold uppercase">Expiring</span>
+</div>
+<div class="grid grid-cols-2 gap-sm mb-lg">
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+<p class="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">Department</p>
+<p class="text-body-sm font-bold">Engineering</p>
+</div>
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+<p class="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">Accuracy</p>
+<p class="text-body-sm font-bold text-on-error-container">98.2% CI</p>
+</div>
+</div>
+<div class="flex flex-col gap-sm flex-1">
+<div class="flex items-center gap-sm">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<p class="text-body-sm text-on-surface truncate italic">"Standard mutual non-disclosure for IP exchange..."</p>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<p class="text-body-sm text-on-surface truncate italic">"Term: 5 Years post-engagement termination..."</p>
+</div>
+</div>
+<div class="mt-lg pt-md border-t border-outline-variant flex items-center justify-between">
+<div class="text-on-surface-variant text-[11px]">
+                                        Extracted 2h ago
+                                    </div>
+<div class="flex gap-sm">
+<button class="font-label-md text-primary flex items-center gap-xs hover:bg-primary-fixed p-1.5 rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                                            History
+                                        </button>
+<button class="bg-primary text-on-primary font-label-md px-md py-1.5 rounded-lg flex items-center gap-xs">
+                                            Open Document
+                                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Full Width Table Row Style Integrated into Grid -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-shadow xl:col-span-2 p-md flex items-center gap-lg">
+<div class="bg-surface-container h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-2xl">apartment</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-md text-body-lg font-bold text-primary truncate">Standard Lease Agreement - Midtown Plaza 4th Floor</h3>
+<div class="flex gap-md mt-1">
+<span class="text-body-sm text-on-surface-variant">Real Estate</span>
+<span class="text-body-sm text-on-surface-variant">•</span>
+<span class="text-body-sm text-on-surface-variant">FY2022</span>
+<span class="text-body-sm text-on-surface-variant">•</span>
+<span class="text-body-sm text-on-error-container font-bold italic">Missing Signature Detected</span>
+</div>
+</div>
+<div class="hidden lg:flex items-center gap-xl pr-md">
+<div class="text-right">
+<p class="text-[10px] uppercase font-bold text-on-surface-variant">Assigned To</p>
+<p class="text-body-sm font-bold">Sarah Jenkins</p>
+</div>
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-shadow group">
+<div class="p-md flex flex-col h-full">
+<div class="flex justify-between items-start mb-md">
+<div class="flex flex-col">
+<div class="flex items-center gap-sm mb-1">
+<span class="material-symbols-outlined text-primary text-xl">handshake</span>
+<h3 class="font-headline-md text-headline-md text-primary leading-tight group-hover:text-secondary transition-colors">Vendor Onboarding - CloudFlow</h3>
+</div>
+<p class="text-on-surface-variant font-label-md">ID: VND-FLOW-22</p>
+</div>
+<span class="bg-surface-container-highest text-on-surface-variant px-sm py-0.5 rounded text-[10px] font-bold uppercase">Archived</span>
+</div>
+<div class="grid grid-cols-2 gap-sm mb-lg">
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+<p class="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">Category</p>
+<p class="text-body-sm font-bold">IT Infrastructure</p>
+</div>
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
+<p class="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">SLA Uptime</p>
+<p class="text-body-sm font-bold">99.9%</p>
+</div>
+</div>
+<div class="flex flex-col gap-sm flex-1">
+<div class="flex items-center gap-sm">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<p class="text-body-sm text-on-surface truncate italic">"Liability capped at 2x annual fees..."</p>
+</div>
+</div>
+<div class="mt-lg pt-md border-t border-outline-variant flex items-center justify-between">
+<div class="text-on-surface-variant text-[11px]">
+                                        Extracted 1d ago
+                                    </div>
+<div class="flex gap-sm">
+<button class="font-label-md text-primary flex items-center gap-xs hover:bg-primary-fixed p-1.5 rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                                            History
+                                        </button>
+<button class="bg-primary text-on-primary font-label-md px-md py-1.5 rounded-lg flex items-center gap-xs">
+                                            Open Document
+                                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (SUPPRESSED based on page context - Repository Hub is navigational) -->
+<script>
+        // Simple search interactivity
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('scale-[1.01]');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('scale-[1.01]');
+        });
+
+        // Command K shortcut simulation
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+
+        // Toggle filters (Visual only)
+        const filterButtons = document.querySelectorAll('button.border');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.classList.contains('border-primary')) {
+                    btn.classList.remove('border-primary', 'bg-primary-fixed', 'text-on-primary-fixed', 'font-bold');
+                    btn.classList.add('border-outline-variant', 'bg-surface-container');
+                } else {
+                    btn.classList.add('border-primary', 'bg-primary-fixed', 'text-on-primary-fixed', 'font-bold');
+                    btn.classList.remove('border-outline-variant', 'bg-surface-container');
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

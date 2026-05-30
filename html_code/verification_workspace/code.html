@@ -1,0 +1,372 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Verification Workspace | LexIntel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed": "#d2e4fb",
+            "on-error-container": "#93000a",
+            "tertiary": "#211200",
+            "on-surface": "#191c1e",
+            "surface-container-highest": "#e0e3e5",
+            "background": "#f7f9fb",
+            "error": "#ba1a1a",
+            "on-secondary-container": "#54647a",
+            "outline": "#74777d",
+            "tertiary-fixed": "#feddb5",
+            "inverse-on-surface": "#eff1f3",
+            "on-primary": "#ffffff",
+            "surface-dim": "#d8dadc",
+            "surface-tint": "#4f6073",
+            "on-secondary-fixed-variant": "#38485d",
+            "inverse-primary": "#b7c8de",
+            "on-surface-variant": "#44474c",
+            "primary-container": "#1a2b3c",
+            "on-error": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#38485a",
+            "surface-bright": "#f7f9fb",
+            "on-tertiary-fixed": "#281802",
+            "surface-container-high": "#e6e8ea",
+            "secondary-container": "#d0e1fb",
+            "inverse-surface": "#2d3133",
+            "on-primary-container": "#8192a7",
+            "tertiary-container": "#38260b",
+            "on-primary-fixed": "#0b1d2d",
+            "surface": "#f7f9fb",
+            "secondary-fixed-dim": "#b7c8e1",
+            "tertiary-fixed-dim": "#e1c29b",
+            "on-tertiary-fixed-variant": "#584326",
+            "on-tertiary-container": "#a88c69",
+            "error-container": "#ffdad6",
+            "surface-variant": "#e0e3e5",
+            "primary": "#041627",
+            "outline-variant": "#c4c6cd",
+            "on-background": "#191c1e",
+            "secondary": "#505f76",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed": "#0b1c30",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed-dim": "#b7c8de",
+            "surface-container-low": "#f2f4f6",
+            "surface-container": "#eceef0",
+            "secondary-fixed": "#d3e4fe"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "unit": "4px",
+            "xl": "32px",
+            "sm": "8px",
+            "sidebar-width": "240px",
+            "gutter": "12px",
+            "lg": "24px",
+            "md": "16px",
+            "metadata-panel": "320px",
+            "xs": "4px"
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c4c6cd; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #74777d; }
+    .split-pane { height: calc(100vh - 56px); }
+  </style>
+</head>
+<body class="bg-background font-body-md text-on-surface flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width z-40 bg-surface border-r border-outline-variant flex flex-col py-md px-sm gap-xs">
+<div class="px-sm mb-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-md">gavel</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-black text-primary leading-none">ContractLens</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+</div>
+<button class="mx-sm mb-md bg-primary text-on-primary py-sm px-md rounded-xl font-label-md text-label-md flex items-center justify-center gap-xs hover:opacity-90 transition-all">
+<span class="material-symbols-outlined text-md">add</span>
+      New Analysis
+    </button>
+<nav class="flex-1 space-y-1">
+<div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-container-high rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</div>
+<div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-container-high rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Contracts</span>
+</div>
+<div class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container font-bold rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="font-label-md text-label-md">Extraction</span>
+</div>
+<div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-container-high rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</div>
+<div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-container-high rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-label-md text-label-md">Review</span>
+</div>
+<div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-container-high rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md text-label-md">Archive</span>
+</div>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-md">
+<div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-container-high rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</div>
+<div class="flex items-center gap-md px-md py-sm text-secondary hover:bg-surface-container-high rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 ml-[240px] flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-[240px] right-0 z-50 bg-surface-container-lowest border-b border-outline-variant h-14 flex items-center justify-between px-lg">
+<div class="flex items-center gap-lg">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary">Verification Workspace</h1>
+<nav class="hidden md:flex gap-md">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors pb-2" href="#">Dashboard</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors pb-2" href="#">Repository</a>
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-2" href="#">Approvals</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<input class="w-64 pl-9 pr-4 py-1.5 bg-surface-container-low border-none rounded-lg text-body-sm focus:ring-1 focus:ring-primary" placeholder="Search parameters..." type="text">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-md">search</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary cursor-pointer"><span class="material-symbols-outlined">notifications</span></button>
+<button class="text-on-surface-variant hover:text-primary cursor-pointer"><span class="material-symbols-outlined">settings</span></button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="User profile" data-alt="A professional headshot of a corporate lawyer in a modern, brightly lit office. The individual is wearing a sharp charcoal suit and has a confident, analytical expression. The background is a clean, minimalist workspace with floor-to-ceiling windows showing a blurred cityscape in daylight, adhering to the high-end light-mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5S2s3DIX_-wT0nQa0EqUgTfghRWd1QfhJ4ishzGWYO8F-fQ7ce0_zk1O38WVvGk07Xi1eggzH3f759hga38Jn0sPCH6pmemuuQVvYiwRkWuW_eYBlhdJ4dmSa2KLgp8DTS4tZ0XkrNW8q_amWzoFGt23AupY1KIA08gJEqa54H-cbCCeLp9nuJFaJz_48zZXk8OEwFT18rtHR4FxIf73s1g3kMzeIiuZzLHNH5pdnn4dmcHi1082F4JPTlm7HtepriaonuoYrCstI">
+</div>
+</div>
+</header>
+<!-- Content Area: Split-Pane Model -->
+<div class="mt-14 flex flex-1 overflow-hidden">
+<!-- Left Pane: Document Viewer -->
+<section class="w-1/2 bg-surface-container border-r border-outline-variant flex flex-col overflow-hidden">
+<div class="h-10 bg-white border-b border-outline-variant px-md flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-md text-primary">description</span>
+<span class="font-label-md text-label-md text-primary uppercase tracking-wider">MSA_NORTHSTAR_2024.pdf</span>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-1 hover:bg-surface-container-low rounded-lg"><span class="material-symbols-outlined text-md">zoom_in</span></button>
+<button class="p-1 hover:bg-surface-container-low rounded-lg"><span class="material-symbols-outlined text-md">zoom_out</span></button>
+<button class="p-1 hover:bg-surface-container-low rounded-lg"><span class="material-symbols-outlined text-md">print</span></button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-xl bg-slate-300/30 flex justify-center">
+<div class="w-full max-w-2xl bg-white shadow-sm border border-outline-variant p-xl min-h-[1000px] relative">
+<div class="absolute top-4 right-4 bg-primary/10 border border-primary/20 px-2 py-1 rounded">
+<span class="text-[10px] font-bold text-primary uppercase">Confidence: 98%</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg mb-lg border-b-2 border-slate-100 pb-2">Master Services Agreement</h2>
+<div class="space-y-4 text-body-md leading-relaxed text-on-surface-variant">
+<p class="">This Master Services Agreement ("Agreement") is entered into as of January 1, 2024, by and between NorthStar Logistics Corp ("Client") and Global Tech Solutions Inc ("Provider").</p>
+<div class="bg-yellow-50 p-2 rounded border border-yellow-200">
+<p class="font-bold mb-1">SECTION 4. PAYMENT TERMS</p>
+<p class="">Client shall pay Provider for the Services in accordance with the fees set forth in Exhibit A. All invoices are payable within <mark class="bg-yellow-200">sixty (60) days</mark> of receipt.</p>
+</div>
+<p class="">...</p>
+<div class="bg-blue-50 p-2 rounded border border-blue-200">
+<p class="font-bold mb-1">SECTION 12. TERMINATION</p>
+<p class="">Either party may terminate this Agreement for convenience upon <mark class="bg-blue-200">ninety (90) days</mark> prior written notice to the other party.</p>
+</div>
+<div class="h-20 bg-slate-50 border border-dashed border-outline-variant rounded flex items-center justify-center italic text-on-surface-variant">
+                    [End of Preview Section]
+                </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Verification Table -->
+<section class="w-1/2 flex flex-col bg-white overflow-hidden">
+<div class="h-10 bg-white border-b border-outline-variant px-md flex items-center justify-between">
+<span class="font-label-md text-label-md text-primary uppercase tracking-wider">Extracted Metadata Verification</span>
+<div class="flex gap-2">
+<span class="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-200">8 VALIDATED</span>
+<span class="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">3 PENDING</span>
+</div>
+</div>
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-low z-10">
+<tr class="border-b border-outline-variant">
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant uppercase w-1/4">Parameter</th>
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant uppercase w-1/3">Original Info (Extracted)</th>
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant uppercase w-1/3">Changed Info (Editable)</th>
+<th class="px-md py-3 w-10"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low group transition-colors">
+<td class="px-md py-3">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary">Contract Title</span>
+<span class="text-[10px] text-on-surface-variant">Field: header_title</span>
+</div>
+</td>
+<td class="px-md py-3 font-mono-md text-mono-md text-on-surface-variant">Master Services Agreement</td>
+<td class="px-md py-3">
+<input class="w-full h-8 px-2 bg-surface-container-lowest border border-outline-variant rounded focus:border-primary focus:ring-0 text-body-sm" type="text" value="Master Services Agreement">
+</td>
+<td class="px-md py-3">
+<span class="material-symbols-outlined text-green-600 text-sm opacity-0 group-hover:opacity-100 transition-opacity" data-weight="fill">check_circle</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low group transition-colors bg-amber-50/30">
+<td class="px-md py-3">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary">Payment Terms</span>
+<span class="text-[10px] text-amber-700">Flagged: Discrepancy</span>
+</div>
+</td>
+<td class="px-md py-3 font-mono-md text-mono-md text-on-surface-variant">60 days</td>
+<td class="px-md py-3">
+<div class="relative">
+<input class="w-full h-8 px-2 bg-white border-2 border-amber-400 rounded focus:border-primary focus:ring-0 text-body-sm font-bold text-amber-900" type="text" value="30 days">
+<span class="absolute -top-4 right-0 text-[9px] font-black text-amber-600 uppercase">Manual Override</span>
+</div>
+</td>
+<td class="px-md py-3">
+<span class="material-symbols-outlined text-amber-500 text-sm">warning</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low group transition-colors">
+<td class="px-md py-3">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary">Termination Notice</span>
+<span class="text-[10px] text-on-surface-variant">Field: clause_12.1</span>
+</div>
+</td>
+<td class="px-md py-3 font-mono-md text-mono-md text-on-surface-variant">90 days</td>
+<td class="px-md py-3">
+<input class="w-full h-8 px-2 bg-surface-container-lowest border border-outline-variant rounded focus:border-primary focus:ring-0 text-body-sm" type="text" value="90 days">
+</td>
+<td class="px-md py-3">
+<span class="material-symbols-outlined text-slate-300 text-sm group-hover:opacity-100">info</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low group transition-colors">
+<td class="px-md py-3">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary">Liability Cap</span>
+<span class="text-[10px] text-on-surface-variant">Field: clause_15.4</span>
+</div>
+</td>
+<td class="px-md py-3 font-mono-md text-mono-md text-on-surface-variant">$1,000,000.00</td>
+<td class="px-md py-3">
+<input class="w-full h-8 px-2 bg-surface-container-lowest border border-outline-variant rounded focus:border-primary focus:ring-0 text-body-sm" type="text" value="$1,000,000.00">
+</td>
+<td class="px-md py-3"></td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low group transition-colors">
+<td class="px-md py-3">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary">Effective Date</span>
+<span class="text-[10px] text-on-surface-variant">Field: date_eff</span>
+</div>
+</td>
+<td class="px-md py-3 font-mono-md text-mono-md text-on-surface-variant">01/01/2024</td>
+<td class="px-md py-3">
+<input class="w-full h-8 px-2 bg-surface-container-lowest border border-outline-variant rounded focus:border-primary focus:ring-0 text-body-sm" type="text" value="2024-01-01">
+</td>
+<td class="px-md py-3"></td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-low group transition-colors">
+<td class="px-md py-3">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary">Governing Law</span>
+<span class="text-[10px] text-on-surface-variant">Field: jurisdiction</span>
+</div>
+</td>
+<td class="px-md py-3 font-mono-md text-mono-md text-on-surface-variant">Delaware, USA</td>
+<td class="px-md py-3">
+<input class="w-full h-8 px-2 bg-surface-container-lowest border border-outline-variant rounded focus:border-primary focus:ring-0 text-body-sm" type="text" value="Delaware, USA">
+</td>
+<td class="px-md py-3"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Sticky Footer Actions -->
+<div class="border-t border-outline-variant p-lg flex items-center justify-between bg-surface-container-lowest">
+<div class="flex items-center gap-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-md">history</span>
+<span class="text-body-sm">Last saved: 2 minutes ago</span>
+</div>
+<div class="flex gap-md">
+<button class="px-lg py-2 border border-outline text-primary font-label-md text-label-md rounded-lg hover:bg-surface-container-high transition-all">
+              Submit Draft
+            </button>
+<button class="px-xl py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all">
+              Submit for Approval
+            </button>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Interactive Scripts -->
+<script>
+    // Simple micro-interaction for row highlighting
+    document.querySelectorAll('tr').forEach(row => {
+      row.addEventListener('click', () => {
+        document.querySelectorAll('tr').forEach(r => r.classList.remove('bg-primary/5'));
+        row.classList.add('bg-primary/5');
+      });
+    });
+
+    // Toggle Sidebar active state visually
+    const navItems = document.querySelectorAll('nav > div');
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        navItems.forEach(i => {
+          i.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'font-bold');
+          i.classList.add('text-secondary', 'hover:bg-surface-container-high');
+        });
+        item.classList.add('bg-secondary-container', 'text-on-secondary-container', 'font-bold');
+        item.classList.remove('text-secondary', 'hover:bg-surface-container-high');
+      });
+    });
+  </script>
+
+
+</body></html>

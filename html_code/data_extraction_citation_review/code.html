@@ -1,0 +1,376 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<title>LexIntel Contract Manager - Data Extraction</title>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "primary-fixed": "#d2e4fb",
+                "on-error-container": "#93000a",
+                "tertiary": "#211200",
+                "on-surface": "#191c1e",
+                "surface-container-highest": "#e0e3e5",
+                "background": "#f7f9fb",
+                "error": "#ba1a1a",
+                "on-secondary-container": "#54647a",
+                "outline": "#74777d",
+                "tertiary-fixed": "#feddb5",
+                "inverse-on-surface": "#eff1f3",
+                "on-primary": "#ffffff",
+                "surface-dim": "#d8dadc",
+                "surface-tint": "#4f6073",
+                "on-secondary-fixed-variant": "#38485d",
+                "inverse-primary": "#b7c8de",
+                "on-surface-variant": "#44474c",
+                "primary-container": "#1a2b3c",
+                "on-error": "#ffffff",
+                "on-secondary": "#ffffff",
+                "on-primary-fixed-variant": "#38485a",
+                "surface-bright": "#f7f9fb",
+                "on-tertiary-fixed": "#281802",
+                "surface-container-high": "#e6e8ea",
+                "secondary-container": "#d0e1fb",
+                "inverse-surface": "#2d3133",
+                "on-primary-container": "#8192a7",
+                "tertiary-container": "#38260b",
+                "on-primary-fixed": "#0b1d2d",
+                "surface": "#f7f9fb",
+                "secondary-fixed-dim": "#b7c8e1",
+                "tertiary-fixed-dim": "#e1c29b",
+                "on-tertiary-fixed-variant": "#584326",
+                "on-tertiary-container": "#a88c69",
+                "error-container": "#ffdad6",
+                "surface-variant": "#e0e3e5",
+                "primary": "#041627",
+                "outline-variant": "#c4c6cd",
+                "on-background": "#191c1e",
+                "secondary": "#505f76",
+                "on-tertiary": "#ffffff",
+                "on-secondary-fixed": "#0b1c30",
+                "surface-container-lowest": "#ffffff",
+                "primary-fixed-dim": "#b7c8de",
+                "surface-container-low": "#f2f4f6",
+                "surface-container": "#eceef0",
+                "secondary-fixed": "#d3e4fe"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "unit": "4px",
+                "xl": "32px",
+                "sm": "8px",
+                "sidebar-width": "240px",
+                "gutter": "12px",
+                "lg": "24px",
+                "md": "16px",
+                "metadata-panel": "320px",
+                "xs": "4px"
+            },
+            "fontFamily": {
+                "headline-md": ["Inter"],
+                "body-lg": ["Inter"],
+                "mono-md": ["JetBrains Mono"],
+                "display-sm": ["Inter"],
+                "headline-lg": ["Inter"],
+                "label-md": ["Inter"],
+                "body-sm": ["Inter"],
+                "body-md": ["Inter"]
+            },
+            "fontSize": {
+                "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "mono-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "display-sm": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .citation-highlight {
+            background-color: rgba(210, 228, 251, 0.4);
+            border-left: 3px solid #041627;
+            transition: all 0.2s ease;
+        }
+        .active-citation {
+            background-color: rgba(210, 228, 251, 0.8);
+            box-shadow: 0 0 0 2px #041627;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c4c6cd;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #74777d;
+        }
+        .pdf-page-shadow {
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-lowest flex justify-between items-center h-14 px-lg w-full border-b border-outline-variant">
+<div class="flex items-center gap-lg">
+<span class="text-headline-lg font-headline-lg font-bold text-primary">ContractLens Manager</span>
+<nav class="hidden md:flex gap-md items-center">
+<a class="font-label-md text-label-md text-on-surface-variant pb-2 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Dashboard</a>
+<a class="font-label-md text-label-md text-on-surface-variant pb-2 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Repository</a>
+<a class="font-label-md text-label-md text-on-surface-variant pb-2 hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Approvals</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="bg-surface-container-low border-none rounded-lg pl-xl pr-md py-xs text-body-sm w-64 focus:ring-1 focus:ring-primary" placeholder="Search contracts..." type="text">
+</div>
+<button class="bg-primary text-on-primary px-md py-xs rounded-lg font-label-md hover:opacity-90 transition-opacity">Upload</button>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">settings</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="User profile" data-alt="A professional headshot of a corporate executive in a sharp navy blue suit, set against a blurred office background with soft bokeh lighting. The style is clean, high-resolution, and perfectly matches the sophisticated, authoritative corporate aesthetic of a high-end legal software platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2y_e--ECyDJnaPmj7SDARAtW7B8XYXMFfwbxfD04ybUgekfQGExoUj6NhQPlTn7V6YsVTJ8YT6FvQewHShL2ryrhq_ANk3_mKSSWcWk5zWfarICB1XJe6meQUiEOWtVvZG-I1BdVSEYbKG388RYfFclD1Xo1-1Vik4zZQ_pG1BcEbW4ntuQSHkE6HpG5TFf9V1dJbXCLWs1myMpP1NnmV4XQfwFmOHstriTf4IPy9a5DbR7F89TrRQ2JDYVzPKBweXCLtz28EFKqg">
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-sidebar-width z-40 bg-surface border-r border-outline-variant flex flex-col py-md px-sm gap-xs">
+<div class="px-sm mb-md">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-black text-primary leading-tight">ContractLens</h2>
+<p class="font-body-sm text-body-sm text-secondary">Enterprise Tier</p>
+</div>
+</div>
+<button class="w-full mt-md bg-secondary-container text-on-secondary-container py-sm rounded-lg font-label-md flex items-center justify-center gap-xs hover:bg-opacity-80 transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Analysis
+            </button>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Contracts</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md bg-secondary-container text-on-secondary-container font-bold rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="font-label-md text-label-md">Extraction</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-label-md text-label-md">Review</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md text-label-md">Archive</span>
+</a>
+</nav>
+<div class="border-t border-outline-variant pt-sm mt-auto flex flex-col gap-xs">
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-md px-sm py-md text-secondary hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar-width pt-14 h-screen flex overflow-hidden">
+<!-- Left Pane: PDF Viewer -->
+<section class="flex-1 bg-surface-container-low border-r border-outline-variant flex flex-col overflow-hidden">
+<div class="h-10 border-b border-outline-variant bg-surface flex items-center justify-between px-md shrink-0">
+<div class="flex items-center gap-sm">
+<span class="font-label-md text-label-md text-primary">MSA_Global_Logistics_2024.pdf</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-xs rounded text-[10px] uppercase font-bold tracking-wider">OCR Verified</span>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer">zoom_out</span>
+<span class="font-label-md text-label-md">100%</span>
+<span class="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer">zoom_in</span>
+<div class="w-[1px] h-4 bg-outline-variant"></div>
+<span class="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer">print</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-xl flex flex-col items-center gap-lg bg-surface-dim" id="pdf-viewer">
+<!-- Mock PDF Page -->
+<div class="w-[600px] bg-white p-xl min-h-[842px] pdf-page-shadow relative font-serif text-[13px] leading-relaxed text-slate-800">
+<div class="text-center font-bold mb-xl text-lg uppercase tracking-widest text-black">Master Services Agreement</div>
+<p class="mb-md">This Agreement is made as of <span class="citation-highlight cursor-pointer px-1 rounded" id="cite-1">January 15, 2024</span> (the "Effective Date") by and between LexGlobal Logistics Corp. and Enterprise Flow Inc.</p>
+<h3 class="font-bold mt-lg mb-xs border-b border-slate-200">1. SCOPE OF SERVICES</h3>
+<p class="mb-md">The Service Provider shall provide global supply chain management as defined in Exhibit A. The total aggregate liability under this agreement shall not exceed <span class="citation-highlight cursor-pointer px-1 rounded" id="cite-2">USD 5,000,000.00</span> for any single claim or series of related claims.</p>
+<h3 class="font-bold mt-lg mb-xs border-b border-slate-200">2. TERMINATION</h3>
+<p class="mb-md">Either party may terminate this agreement for convenience upon <span class="citation-highlight cursor-pointer px-1 rounded" id="cite-3">90 days prior written notice</span> to the other party. In the event of a material breach, the non-breaching party may terminate immediately if the breach is not cured within 15 days.</p>
+<h3 class="font-bold mt-lg mb-xs border-b border-slate-200">3. GOVERNING LAW</h3>
+<p class="mb-md">This agreement and any dispute or claim arising out of or in connection with it or its subject matter shall be governed by and construed in accordance with the laws of <span class="citation-highlight cursor-pointer px-1 rounded" id="cite-4">the State of Delaware, USA</span>.</p>
+<div class="mt-xl h-40 bg-slate-50 border border-dashed border-slate-200 rounded flex items-center justify-center text-slate-400 italic">
+                        Additional clauses on Page 2...
+                    </div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Data Table -->
+<section class="w-[500px] bg-white flex flex-col overflow-hidden">
+<div class="h-10 border-b border-outline-variant bg-surface flex items-center px-md shrink-0 justify-between">
+<span class="font-label-md text-label-md text-primary">AI EXTRACTED PARAMETERS</span>
+<div class="flex gap-xs">
+<button class="p-xs hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+</button>
+<button class="p-xs hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-white z-10">
+<tr class="bg-surface-container-low">
+<th class="px-md py-sm font-label-md text-[10px] text-outline uppercase tracking-wider border-b border-outline-variant">Header / Name</th>
+<th class="px-md py-sm font-label-md text-[10px] text-outline uppercase tracking-wider border-b border-outline-variant">Extracted Data</th>
+<th class="px-md py-sm font-label-md text-[10px] text-outline uppercase tracking-wider border-b border-outline-variant text-center">Score</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low cursor-pointer transition-colors group" id="row-1" onclick="highlightCitation(1)">
+<td class="px-md py-md">
+<div class="text-[10px] font-bold text-secondary uppercase mb-xs">Administrative</div>
+<div class="font-label-md text-primary">Effective Date</div>
+</td>
+<td class="px-md py-md font-body-sm text-on-surface-variant">2024-01-15</td>
+<td class="px-md py-md text-center">
+<span class="bg-emerald-100 text-emerald-800 px-xs py-0.5 rounded text-[10px] font-bold">99%</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low cursor-pointer transition-colors group" id="row-2" onclick="highlightCitation(2)">
+<td class="px-md py-md">
+<div class="text-[10px] font-bold text-secondary uppercase mb-xs">Liability</div>
+<div class="font-label-md text-primary">Liability Cap</div>
+</td>
+<td class="px-md py-md font-body-sm text-on-surface-variant">$5,000,000.00</td>
+<td class="px-md py-md text-center">
+<span class="bg-emerald-100 text-emerald-800 px-xs py-0.5 rounded text-[10px] font-bold">94%</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low cursor-pointer transition-colors group" id="row-3" onclick="highlightCitation(3)">
+<td class="px-md py-md">
+<div class="text-[10px] font-bold text-secondary uppercase mb-xs">Operations</div>
+<div class="font-label-md text-primary">Termination Period</div>
+</td>
+<td class="px-md py-md font-body-sm text-on-surface-variant">90 Days Convenience</td>
+<td class="px-md py-md text-center">
+<span class="bg-amber-100 text-amber-800 px-xs py-0.5 rounded text-[10px] font-bold">88%</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low cursor-pointer transition-colors group" id="row-4" onclick="highlightCitation(4)">
+<td class="px-md py-md">
+<div class="text-[10px] font-bold text-secondary uppercase mb-xs">Compliance</div>
+<div class="font-label-md text-primary">Governing Law</div>
+</td>
+<td class="px-md py-md font-body-sm text-on-surface-variant">Delaware, USA</td>
+<td class="px-md py-md text-center">
+<span class="bg-emerald-100 text-emerald-800 px-xs py-0.5 rounded text-[10px] font-bold">100%</span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low cursor-pointer transition-colors group opacity-60">
+<td class="px-md py-md">
+<div class="text-[10px] font-bold text-secondary uppercase mb-xs">Financial</div>
+<div class="font-label-md text-primary">Payment Terms</div>
+</td>
+<td class="px-md py-md font-body-sm text-on-surface-variant italic">Not found on page 1</td>
+<td class="px-md py-md text-center">
+<span class="material-symbols-outlined text-outline text-sm">warning</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Review Actions -->
+<div class="p-md bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+<span class="font-label-md text-body-sm">4/12 Parameters Validated</span>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-sm border border-outline-variant rounded-lg font-label-md hover:bg-white transition-colors">Flag Issues</button>
+<button class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md shadow-md hover:opacity-90">Approve All</button>
+</div>
+</div>
+</section>
+</main>
+<script>
+        function highlightCitation(id) {
+            // Remove all existing highlights
+            document.querySelectorAll('.citation-highlight').forEach(el => {
+                el.classList.remove('active-citation');
+            });
+            document.querySelectorAll('tbody tr').forEach(el => {
+                el.classList.remove('bg-secondary-container');
+                el.classList.remove('dark:bg-primary-container');
+            });
+
+            // Add highlight to text
+            const citation = document.getElementById('cite-' + id);
+            if (citation) {
+                citation.classList.add('active-citation');
+                citation.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Add highlight to table row
+            const row = document.getElementById('row-' + id);
+            if (row) {
+                row.classList.add('bg-secondary-container');
+            }
+        }
+
+        // Add event listeners for bidirectional interaction
+        document.querySelectorAll('.citation-highlight').forEach(cite => {
+            cite.addEventListener('click', function() {
+                const id = this.id.split('-')[1];
+                highlightCitation(id);
+            });
+        });
+    </script>
+
+
+</body></html>
