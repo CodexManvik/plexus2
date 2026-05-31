@@ -143,24 +143,28 @@ export default function Upload() {
 
   if (step !== 'idle') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-xl min-h-[calc(100vh-3.5rem)] bg-surface-container-low">
-        <div className="max-w-md w-full bg-white p-xl rounded-xl border border-outline-variant shadow-lg text-center flex flex-col items-center gap-md">
+      <div className="flex-grow flex flex-col items-center justify-center p-xl min-h-[calc(100vh-3.5rem)] bg-surface/30 select-none">
+        <div className="max-w-md w-full bg-white p-xl rounded-2xl border border-outline-variant/30 shadow-xl text-center flex flex-col items-center gap-md relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+          
           {/* Animated Spinner with Step Info */}
-          <div className="relative w-24 h-24 flex items-center justify-center">
-            <div className="absolute inset-0 border-4 border-primary-fixed rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-primary rounded-full animate-spin border-t-transparent"></div>
-            <span className="material-symbols-outlined text-primary text-3xl">
-              {step === 'uploading' && 'cloud_upload'}
-              {step === 'parsing' && 'sync_alt'}
-              {step === 'extracting' && 'psychology'}
-              {step === 'grounding' && 'tag'}
-              {step === 'validating' && 'fact_check'}
-              {step === 'done' && 'check_circle'}
-            </span>
+          <div className="relative w-24 h-24 flex items-center justify-center mt-sm">
+            <div className="absolute inset-0 border-4 border-slate-100 rounded-full shadow-inner"></div>
+            <div className="absolute inset-0 border-4 border-primary rounded-full animate-spin border-t-transparent shadow-md"></div>
+            <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center shadow-inner">
+              <span className="material-symbols-outlined text-primary text-[28px] font-bold">
+                {step === 'uploading' && 'cloud_upload'}
+                {step === 'parsing' && 'sync_alt'}
+                {step === 'extracting' && 'psychology'}
+                {step === 'grounding' && 'tag'}
+                {step === 'validating' && 'fact_check'}
+                {step === 'done' && 'check_circle'}
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-sm">
-            <h2 className="font-headline-md text-headline-md text-primary uppercase tracking-wider">
+          <div className="space-y-xs my-sm">
+            <h2 className="text-[13px] font-black text-primary uppercase tracking-wider">
               {step === 'uploading' && 'Ingestion Active'}
               {step === 'parsing' && 'Parsing Schema'}
               {step === 'extracting' && 'AI Extraction'}
@@ -168,20 +172,20 @@ export default function Upload() {
               {step === 'validating' && 'Verifying Rules'}
               {step === 'done' && 'Complete'}
             </h2>
-            <p className="font-body-md text-body-md text-on-surface-variant animate-pulse px-4">
+            <p className="font-body-md text-body-md text-slate-500 font-semibold animate-pulse px-4 leading-relaxed">
               {progressMessage}
             </p>
           </div>
 
           {/* Stepper Progress Badges */}
-          <div className="flex justify-between w-full border-t border-outline-variant pt-lg mt-md text-[10px] font-bold text-on-surface-variant">
-            <span className={step === 'uploading' ? 'text-primary' : ''}>Ingest</span>
-            <span className="material-symbols-outlined text-[10px]">chevron_right</span>
-            <span className={step === 'parsing' ? 'text-primary' : ''}>Parse</span>
-            <span className="material-symbols-outlined text-[10px]">chevron_right</span>
-            <span className={step === 'extracting' ? 'text-primary' : ''}>Extract</span>
-            <span className="material-symbols-outlined text-[10px]">chevron_right</span>
-            <span className={step === 'grounding' || step === 'validating' ? 'text-primary' : ''}>Ground</span>
+          <div className="flex justify-between items-center w-full border-t border-slate-100 pt-lg mt-sm text-[10px] font-extrabold text-slate-400">
+            <span className={step === 'uploading' ? 'text-primary' : ''}>INGEST</span>
+            <span className="material-symbols-outlined text-[12px] font-bold">chevron_right</span>
+            <span className={step === 'parsing' ? 'text-primary' : ''}>PARSE</span>
+            <span className="material-symbols-outlined text-[12px] font-bold">chevron_right</span>
+            <span className={step === 'extracting' ? 'text-primary' : ''}>EXTRACT</span>
+            <span className="material-symbols-outlined text-[12px] font-bold">chevron_right</span>
+            <span className={step === 'grounding' || step === 'validating' ? 'text-primary' : ''}>GROUND</span>
           </div>
         </div>
       </div>
@@ -189,7 +193,7 @@ export default function Upload() {
   }
 
   return (
-    <main className="flex-1 flex overflow-hidden min-h-[calc(100vh-3.5rem)]">
+    <main className="flex-1 flex overflow-hidden min-h-[calc(100vh-3.5rem)] bg-surface/30">
       {/* Hidden file input */}
       <input 
         type="file" 
@@ -200,22 +204,22 @@ export default function Upload() {
       />
 
       {/* Left Pane: Drag & Drop Dropzone */}
-      <section className="flex-1 p-lg flex flex-col gap-lg overflow-y-auto custom-scrollbar bg-background">
-        <div className="flex justify-between items-end">
+      <section className="flex-1 p-lg flex flex-col gap-lg overflow-y-auto custom-scrollbar select-none">
+        <div className="flex justify-between items-end border-b border-slate-100 pb-sm">
           <div>
-            <h1 className="font-display-sm text-display-sm text-primary">Upload Contract</h1>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Drag and drop documents to initiate AI-powered metadata extraction.
+            <h1 className="font-display-sm text-display-sm text-primary font-black tracking-tight">Upload Contract</h1>
+            <p className="font-body-md text-body-md text-on-surface-variant font-medium">
+              Drag and drop corporate agreements to trigger real-time metadata parsing and AI grounding.
             </p>
           </div>
-          <div className="flex gap-sm">
-            <span className="px-sm py-1 bg-surface-container-high text-on-surface-variant rounded-full text-label-md font-label-md">PDF</span>
-            <span className="px-sm py-1 bg-surface-container-high text-on-surface-variant rounded-full text-label-md font-label-md">DOCX</span>
+          <div className="flex gap-xs">
+            <span className="px-sm py-[2px] bg-slate-100 border border-slate-200 text-slate-600 rounded-full text-[10px] font-extrabold uppercase tracking-wider">PDF</span>
+            <span className="px-sm py-[2px] bg-slate-100 border border-slate-200 text-slate-600 rounded-full text-[10px] font-extrabold uppercase tracking-wider">DOCX</span>
           </div>
         </div>
 
         {error && (
-          <div className="bg-error-container text-error border border-error/20 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-red-50 text-red-700 border border-red-200 px-lg py-md rounded-xl text-sm font-semibold shadow-sm">
             {error}
           </div>
         )}
@@ -227,43 +231,43 @@ export default function Upload() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={triggerFileSelect}
-            className={`col-span-12 md:col-span-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-xl group transition-all cursor-pointer relative overflow-hidden ${
+            className={`col-span-12 md:col-span-8 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-xl group transition-all duration-350 cursor-pointer relative overflow-hidden shadow-sm ${
               isDragOver 
-                ? 'border-primary bg-secondary-container-flat' 
-                : 'border-outline-variant bg-surface-container-lowest hover:border-primary'
+                ? 'border-primary bg-blue-50/30' 
+                : 'border-outline-variant/60 bg-white hover:border-primary hover:shadow-md'
             }`}
           >
             {/* Background Visual Subtle Grid */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#041627 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#041627 1.5px, transparent 1.5px)', backgroundSize: '16px 16px' }}></div>
             
-            <div className="w-16 h-16 bg-primary-fixed text-primary rounded-full flex items-center justify-center mb-md group-hover:scale-110 transition-transform duration-300 shadow-sm">
-              <span className="material-symbols-outlined text-3xl">upload_file</span>
+            <div className="w-16 h-16 bg-primary-fixed text-primary rounded-2xl flex items-center justify-center mb-md group-hover:scale-105 transition-transform duration-300 shadow-inner shrink-0">
+              <span className="material-symbols-outlined text-[28px] font-bold">upload_file</span>
             </div>
 
             {file ? (
-              <div className="text-center space-y-xs z-10">
-                <p className="font-headline-md text-headline-md text-primary truncate max-w-xs">{file.name}</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  {(file.size / 1024 / 1024).toFixed(2)} MB • Ready for analysis
+              <div className="text-center space-y-xs z-10 max-w-sm px-md">
+                <p className="font-body-lg text-body-lg font-black text-primary truncate" title={file.name}>{file.name}</p>
+                <p className="text-[12px] text-slate-500 font-semibold">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB • Document verified successfully
                 </p>
-                <span className="mt-md inline-block bg-primary-fixed text-primary font-label-md text-label-md px-md py-1 rounded">
-                  CLICK TO CHANGE FILE
+                <span className="mt-md inline-block bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-label-md px-lg py-1.5 rounded-xl transition-colors shadow-sm select-none">
+                  CHANGE SELECTED FILE
                 </span>
               </div>
             ) : (
-              <div className="text-center z-10">
-                <p className="font-headline-md text-headline-md text-on-surface mb-xs">Click or drag files to this area to upload</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant max-w-xs mx-auto">
-                  Support for single PDF or Word documents. Strict enterprise encryption applied to all file transmissions.
+              <div className="text-center z-10 px-md">
+                <p className="font-headline-md text-headline-md text-primary font-extrabold mb-xs">Drop contract file here to parse</p>
+                <p className="font-body-sm text-[12px] text-slate-500 max-w-xs mx-auto font-medium leading-relaxed">
+                  Click to browse local files or drop standard corporate PDFs and DOCX files.
                 </p>
-                <div className="mt-xl flex gap-md justify-center">
-                  <div className="flex flex-col items-center gap-xs px-lg py-sm bg-surface-container border border-outline-variant rounded shadow-sm">
-                    <span className="material-symbols-outlined text-primary">picture_as_pdf</span>
-                    <span className="font-label-md text-label-md">Legal PDF</span>
+                <div className="mt-lg flex gap-md justify-center select-none">
+                  <div className="flex flex-col items-center gap-[2px] px-lg py-sm bg-slate-50 border border-slate-100 rounded-xl shadow-sm shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px] font-bold">picture_as_pdf</span>
+                    <span className="text-[10px] font-extrabold text-slate-600">Legal PDF</span>
                   </div>
-                  <div className="flex flex-col items-center gap-xs px-lg py-sm bg-surface-container border border-outline-variant rounded shadow-sm">
-                    <span className="material-symbols-outlined text-on-secondary-container">description</span>
-                    <span className="font-label-md text-label-md">Word Doc</span>
+                  <div className="flex flex-col items-center gap-[2px] px-lg py-sm bg-slate-50 border border-slate-100 rounded-xl shadow-sm shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px] font-bold">description</span>
+                    <span className="text-[10px] font-extrabold text-slate-600">Word Doc</span>
                   </div>
                 </div>
               </div>
@@ -272,28 +276,30 @@ export default function Upload() {
 
           {/* Secondary Info Cards (Bento Style) */}
           <div className="col-span-12 md:col-span-4 flex flex-col gap-md">
-            <div className="flex-1 bg-primary text-on-primary p-lg rounded-xl flex flex-col justify-between overflow-hidden relative shadow-md">
+            <div className="flex-1 bg-gradient-to-br from-slate-50 to-indigo-50/50 border border-slate-200/50 text-slate-800 p-lg rounded-2xl flex flex-col justify-between overflow-hidden relative shadow-sm">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-100/30 rounded-full blur-xl -mr-6 -mt-6"></div>
+              
               <div className="z-10">
-                <h3 className="font-headline-md text-headline-md mb-xs">AI Extraction</h3>
-                <p className="font-body-sm text-body-sm opacity-80">
-                  Our pipeline automatically resolves 50+ metadata clauses, dates, and liability limits using semantic evidence grounding.
+                <h3 className="text-[14px] font-black mb-xs uppercase tracking-wider text-indigo-700">AI Ingest System</h3>
+                <p className="text-[12px] text-slate-500 font-bold leading-relaxed">
+                  Our pipeline automatically extracts over 50 distinct legal clauses, indemnity scopes, and key date thresholds.
                 </p>
               </div>
-              <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4">
-                <span className="material-symbols-outlined text-white opacity-10 text-[120px]">psychology</span>
+              <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 select-none pointer-events-none">
+                <span className="material-symbols-outlined text-indigo-600/10 opacity-30 text-[110px]" style={{ fontVariationSettings: '"FILL" 1' }}>psychology</span>
               </div>
             </div>
             
-            <div className="flex-1 bg-white border border-outline-variant p-lg rounded-xl flex flex-col justify-between shadow-sm">
+            <div className="flex-1 bg-white border border-outline-variant/30 p-lg rounded-2xl flex flex-col justify-between shadow-sm">
               <div>
-                <h3 className="font-headline-md text-headline-md text-primary mb-xs">Secure Storage</h3>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  Files are saved securely in your isolated OCI Object Storage bucket with private encryption.
+                <h3 className="font-headline-md text-headline-md text-primary font-extrabold mb-xs">Secure Oracle Storage</h3>
+                <p className="text-[12px] text-slate-500 font-medium leading-relaxed">
+                  Documents are stored in a private, encrypted storage container with local role-based access tokens.
                 </p>
               </div>
-              <div className="flex items-center gap-sm mt-md bg-surface-container-low p-sm rounded border border-outline-variant/30">
-                <span className="material-symbols-outlined text-emerald-600">verified_user</span>
-                <span className="font-label-md text-[11px] text-on-surface-variant uppercase tracking-wider font-bold">AES-256 ENCRYPTED</span>
+              <div className="flex items-center gap-sm mt-md bg-slate-50 border border-slate-100 p-sm rounded-xl select-none">
+                <span className="material-symbols-outlined text-emerald-600 text-[20px] font-bold">verified_user</span>
+                <span className="text-[9px] text-slate-500 uppercase tracking-wider font-black">AES-256 Encrypted</span>
               </div>
             </div>
           </div>
@@ -301,9 +307,9 @@ export default function Upload() {
       </section>
 
       {/* Right Pane: Metadata Tagging Side Panel */}
-      <aside className="w-[440px] bg-white border-l border-outline-variant flex flex-col shadow-sm">
-        <div className="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-          <h2 className="font-headline-md text-headline-md text-primary">Tagging &amp; Metadata</h2>
+      <aside className="w-[440px] bg-white border-l border-outline-variant/40 flex flex-col shadow-sm select-none">
+        <div className="p-lg border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <h2 className="font-headline-md text-headline-md text-primary font-black tracking-tight">Tagging &amp; Metadata</h2>
           <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
         </div>
 
@@ -312,14 +318,14 @@ export default function Upload() {
             
             {/* Entity Details */}
             <div className="space-y-md">
-              <p className="font-label-md text-label-md text-primary-container-flat uppercase tracking-wider font-bold">Entity Details</p>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Entity Details</p>
               
               <div className="space-y-xs">
-                <label className="font-label-md text-label-md text-on-surface-variant">Organization</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Organization</label>
                 <select 
                   value={organization}
                   onChange={(e) => setOrganization(e.target.value)}
-                  className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                 >
                   <option>LexIntel Corporate</option>
                   <option>Global Holdings LLC</option>
@@ -329,64 +335,64 @@ export default function Upload() {
 
               <div className="grid grid-cols-2 gap-md">
                 <div className="space-y-xs">
-                  <label className="font-label-md text-label-md text-on-surface-variant">Business Unit</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Business Unit</label>
                   <input 
                     type="text"
                     value={businessUnit}
                     onChange={(e) => setBusinessUnit(e.target.value)}
                     placeholder="e.g. Finance" 
-                    className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none placeholder:text-outline"
+                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
                 <div className="space-y-xs">
-                  <label className="font-label-md text-label-md text-on-surface-variant">Location</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Location</label>
                   <input 
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="New York, NY" 
-                    className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none placeholder:text-outline"
+                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
               </div>
 
               <div className="space-y-xs">
-                <label className="font-label-md text-label-md text-on-surface-variant">Department</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Department</label>
                 <input 
                   type="text"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                   placeholder="Legal Operations" 
-                  className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none placeholder:text-outline"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
             </div>
 
-            <hr className="border-outline-variant" />
+            <hr className="border-slate-100" />
 
             {/* Contract Context */}
             <div className="space-y-md">
-              <p className="font-label-md text-label-md text-primary-container-flat uppercase tracking-wider font-bold">Contractual Context</p>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Contractual Context</p>
               
               <div className="space-y-xs">
-                <label className="font-label-md text-label-md text-on-surface-variant">Customer/Partner Name (Client)</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Customer/Partner Name (Client)</label>
                 <input 
                   type="text"
                   required
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="e.g. Apex Financial Group" 
-                  className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none placeholder:text-outline"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-md">
                 <div className="space-y-xs">
-                  <label className="font-label-md text-label-md text-on-surface-variant">Financial Year</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Financial Year</label>
                   <select 
                     value={financialYear}
                     onChange={(e) => setFinancialYear(e.target.value)}
-                    className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   >
                     <option>FY 2024</option>
                     <option>FY 2023</option>
@@ -394,11 +400,11 @@ export default function Upload() {
                   </select>
                 </div>
                 <div className="space-y-xs">
-                  <label className="font-label-md text-label-md text-on-surface-variant">Contract Type</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Contract Type</label>
                   <select 
                     value={contractType}
                     onChange={(e) => setContractType(e.target.value)}
-                    className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   >
                     <option>Service Agreement</option>
                     <option>NDA</option>
@@ -410,37 +416,37 @@ export default function Upload() {
               </div>
 
               <div className="space-y-xs">
-                <label className="font-label-md text-label-md text-on-surface-variant">Agreement Type</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Agreement Type</label>
                 <input 
                   type="text"
                   value={agreementType}
                   onChange={(e) => setAgreementType(e.target.value)}
                   placeholder="Master Service Agreement (MSA)" 
-                  className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md focus:ring-0 outline-none placeholder:text-outline"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div className="space-y-xs">
-                <label className="font-label-md text-label-md text-on-surface-variant">Additional Info (Notes)</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Additional Info (Notes)</label>
                 <textarea 
                   value={additionalInfo}
                   onChange={(e) => setAdditionalInfo(e.target.value)}
                   placeholder="Notes on urgency, specific clause exceptions, or internal references..." 
                   rows={3}
-                  className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-primary border-t-0 border-x-0 rounded-none py-sm font-body-md text-body-md resize-none focus:ring-0 outline-none placeholder:text-outline"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl py-2 px-3 font-semibold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 placeholder:font-normal resize-none"
                 ></textarea>
               </div>
             </div>
           </div>
 
           {/* Sticky Footer Action */}
-          <div className="p-lg bg-white border-t border-outline-variant mt-auto">
+          <div className="p-lg bg-white border-t border-slate-100 mt-auto">
             <button 
               type="submit"
-              className="w-full py-md bg-primary text-on-primary rounded-lg font-headline-md text-headline-md hover:bg-primary-container active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-xs duration-150"
+              className="w-full py-3 bg-primary hover:bg-primary/95 text-on-primary rounded-xl font-bold text-[14px] flex items-center justify-center gap-xs hover:scale-[1.01] active:scale-[0.99] transition-all shadow-md select-none"
             >
-              <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-              Submit &amp; Start Extraction
+              <span className="material-symbols-outlined text-[20px] font-bold">auto_awesome</span>
+              Submit &amp; Start Ingestion
             </button>
           </div>
         </form>

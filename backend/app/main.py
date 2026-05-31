@@ -14,6 +14,7 @@ from .config import settings
 from .database import db_pool
 from .auth.service import AuthService
 from .auth.models import UserCreate, UserRole
+from .utils.groq_client import groq_client
 
 # Import routers
 from .auth.router import router as auth_router
@@ -91,6 +92,19 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Plexus backend...")
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Backend URL: {settings.backend_url}")
+    
+    # Log LLM backend status
+    if settings.llm_backend == "local":
+        logger.info(f"✓ LLM Backend: Local llama.cpp ({settings.local_llm_url})")
+    else:
+        logger.info("✓ LLM Backend: Groq API")
+
+    try:
+        # Initialize LLM client (groq_client routes to local or Groq based on config)
+        _ = groq_client  # Trigger initialization and log startup message
+    except Exception as e:
+        logger.error(f"Failed to initialize LLM client: {e}")
+        raise
 
     try:
         await db_pool.initialize()

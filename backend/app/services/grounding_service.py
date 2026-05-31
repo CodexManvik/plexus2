@@ -82,7 +82,15 @@ class GroundingService:
             )
 
         # Stage 5: LLM alignment (expensive — last resort)
-        result = GroundingAgent.align_evidence(extracted_value, supporting_text, blocks)
+        import asyncio
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            GroundingAgent.align_evidence,
+            extracted_value,
+            supporting_text,
+            blocks
+        )
         if result:
             block_id, matched_text, confidence = result
             block = next((b for b in blocks if b["block_id"] == block_id), None)

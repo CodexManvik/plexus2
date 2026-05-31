@@ -54,7 +54,14 @@ class AssistantService:
             }
         
         # Synthesize answer with citations
-        result = AssistantAgent.synthesize_answer(question, relevant_params)
+        import asyncio
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            AssistantAgent.synthesize_answer,
+            question,
+            relevant_params
+        )
         result['parameters_searched'] = len(relevant_params)
         
         return result

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import api from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 // Set worker source using a stable, fast unpkg CDN matching the installed version
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version || '4.0.379'}/build/pdf.worker.min.mjs`;
@@ -60,9 +61,11 @@ export default function PDFViewer({ contractId, activeParamId, parameters, onPar
 
         if (!active) return;
 
+        const { accessToken } = useAuthStore.getState();
         const loadingTask = pdfjsLib.getDocument({
           url: data.url,
-          withCredentials: false
+          withCredentials: false,
+          httpHeaders: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
         });
 
         const doc = await loadingTask.promise;

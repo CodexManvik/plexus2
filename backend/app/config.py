@@ -26,10 +26,17 @@ class Settings(BaseSettings):
     oci_config_file: str = Field(default='~/.oci/config', env='OCI_CONFIG_FILE')
     oci_profile: str = Field(default='DEFAULT', env='OCI_PROFILE')
     
-    # Groq API
-    groq_api_key: str = Field(..., env='GROQ_API_KEY')
+    # LLM Backend Selection
+    llm_backend: str = Field(default='groq', env='LLM_BACKEND')  # 'groq' or 'local'
+    
+    # Groq API (when llm_backend='groq')
+    groq_api_key: Optional[str] = Field(None, env='GROQ_API_KEY')
     groq_model_heavy: str = Field(default='llama-3.3-70b-versatile', env='GROQ_MODEL_HEAVY')
     groq_model_fast: str = Field(default='llama-3.1-8b-instant', env='GROQ_MODEL_FAST')
+    
+    # Local LLM (llama.cpp) (when llm_backend='local')
+    local_llm_url: str = Field(default='http://127.0.0.1:8080', env='LOCAL_LLM_URL')
+    local_llm_model: str = Field(default='mistral', env='LOCAL_LLM_MODEL')  # model name in llama.cpp
     
     # Cohere API
     cohere_api_key: str = Field(..., env='COHERE_API_KEY')
@@ -46,6 +53,14 @@ class Settings(BaseSettings):
     frontend_url: str = Field(default='http://localhost:3000', env='FRONTEND_URL')
     environment: str = Field(default='development', env='ENVIRONMENT')
     seed_admin: bool = Field(default=False, env='SEED_ADMIN')
+    
+    @validator('groq_api_key')
+    def validate_groq_api_key(cls, v, values):
+        """Groq API key required only if using groq backend."""
+        llm_backend = values.get('llm_backend', 'groq')
+        if llm_backend == 'groq' and not v:
+            raise ValueError('GROQ_API_KEY is required when LLM_BACKEND=groq')
+        return v
     
     @validator('jwt_secret_key')
     def validate_jwt_secret(cls, v):

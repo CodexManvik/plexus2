@@ -174,16 +174,17 @@ export default function DraftReview() {
       {/* Left Pane: PDF Viewer */}
       <section className="w-1/2 bg-surface-container border-r border-outline-variant flex flex-col overflow-hidden">
         {/* PDF Header Sub-nav */}
-        <div className="h-10 border-b border-outline-variant bg-surface flex items-center justify-between px-md shrink-0">
+        <div className="h-12 border-b border-outline-variant bg-surface-container-low flex items-center justify-between px-lg shrink-0 shadow-sm select-none">
           <div className="flex items-center gap-sm">
-            <span className="font-label-md text-label-md text-primary font-bold truncate max-w-[220px]">
+            <span className="material-symbols-outlined text-primary text-md">description</span>
+            <span className="text-xs font-semibold tracking-wide text-primary truncate max-w-[220px]">
               {contractData?.filename || 'contract_preview.pdf'}
             </span>
-            <span className="bg-surface-container-highest text-on-surface-variant px-xs rounded text-[10px] uppercase font-bold tracking-wider">
+            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-primary-fixed text-primary text-[9px] font-extrabold rounded-full border border-primary/10">
               OCR Grounded
             </span>
           </div>
-          <span className="text-[11px] font-bold text-slate-400 font-mono">PDF.JS INTEGRATION</span>
+          <span className="text-[10px] font-bold text-slate-400 font-mono tracking-widest uppercase">Viewer v2.0</span>
         </div>
         
         {contractId && (
@@ -199,13 +200,18 @@ export default function DraftReview() {
       {/* Right Pane: Extracted Metadata Verification Table */}
       <section className="w-1/2 flex flex-col bg-white overflow-hidden">
         {/* Table Header Bar */}
-        <div className="h-10 bg-white border-b border-outline-variant px-md flex items-center shrink-0 justify-between">
-          <span className="font-label-md text-label-md text-primary font-bold">EXTRACTED METADATA VERIFICATION</span>
-          <div className="flex gap-xs">
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
+        <div className="h-12 bg-surface-container-low border-b border-outline-variant px-lg flex items-center shrink-0 justify-between shadow-sm select-none">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-md">verified_user</span>
+            <span className="text-xs font-bold tracking-wider uppercase text-primary">EXTRACTED METADATA VERIFICATION</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold rounded-full border border-emerald-200 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               {parameters.filter(p => p.reviewer_status === 'ACCEPTED').length} VALIDATED
             </span>
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold rounded-full border border-amber-200 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
               {parameters.filter(p => !p.reviewer_status).length} PENDING
             </span>
           </div>
@@ -215,67 +221,85 @@ export default function DraftReview() {
         <div
           ref={tablePaneRef}
           onScroll={handleTableScroll}
-          className="flex-1 overflow-auto custom-scrollbar"
+          className="flex-1 overflow-auto custom-scrollbar bg-slate-50/50"
         >
           {isLoading ? (
-            <div className="text-center py-20 text-on-surface-variant font-body-md">Querying parameters...</div>
+            <div className="w-full flex flex-col items-center justify-center py-20 gap-md text-on-surface-variant">
+              <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="font-medium text-sm">Querying parameters...</p>
+            </div>
           ) : parameters.length === 0 ? (
-            <div className="text-center py-20 text-on-surface-variant font-body-md">No parameter logic defined for this contract.</div>
+            <div className="text-center py-20 text-on-surface-variant font-medium text-sm">No parameter logic defined for this contract.</div>
           ) : (
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-surface-container-low z-10 border-b border-outline-variant">
+              <thead className="sticky top-0 bg-surface-container-low z-10 border-b border-outline-variant shadow-sm select-none">
                 <tr>
-                  <th className="px-md py-3 font-label-md text-label-md text-on-surface-variant uppercase w-1/4 font-bold">Parameter</th>
-                  <th className="px-md py-3 font-label-md text-label-md text-on-surface-variant uppercase w-1/3 font-bold">Extracted Info (Model)</th>
-                  <th className="px-md py-3 font-label-md text-label-md text-on-surface-variant uppercase w-1/3 font-bold">Verify / Edit</th>
-                  <th className="px-md py-3 w-12 font-bold text-center">Score</th>
+                  <th className="px-md py-3 font-bold text-[11px] text-primary uppercase w-1/4 tracking-wider">Parameter</th>
+                  <th className="px-md py-3 font-bold text-[11px] text-primary uppercase w-1/3 tracking-wider">Extracted Info (Model)</th>
+                  <th className="px-md py-3 font-bold text-[11px] text-primary uppercase w-1/3 tracking-wider">Verify / Edit</th>
+                  <th className="px-md py-3 w-12 font-bold text-center text-[11px] tracking-wider text-primary">Score</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/30">
+              <tbody className="divide-y divide-outline-variant/20 bg-white">
                 {parameters.map((param) => (
                   <tr 
                     key={param.param_id}
                     ref={el => paramRefs.current[param.param_id] = el}
                     onClick={() => setActiveParamId(param.param_id)}
-                    className={`hover:bg-surface-container-low transition-colors group cursor-pointer ${
-                      activeParamId === param.param_id ? 'bg-primary-fixed/20 border-l-4 border-l-primary' : ''
-                    } ${param.reviewer_status === 'REJECTED' ? 'bg-red-50/20' : ''}`}
+                    className={`hover:bg-primary-fixed/5 transition-all duration-200 group cursor-pointer ${
+                      activeParamId === param.param_id 
+                        ? 'bg-gradient-to-r from-primary-fixed/30 to-transparent border-l-4 border-l-primary shadow-sm' 
+                        : ''
+                    } ${param.reviewer_status === 'REJECTED' ? 'bg-red-50/10' : ''}`}
                   >
                     {/* Parameter Head */}
-                    <td className="px-md py-3">
+                    <td className="px-md py-4">
                       <div className="flex flex-col">
-                        <span className="font-label-md text-label-md text-primary font-bold">{param.parameter_name}</span>
-                        <span className="text-[10px] text-on-surface-variant font-mono uppercase tracking-tight">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-xs text-primary">{param.parameter_name}</span>
+                          {!param.grounding && param.extracted_value && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200" title="Extracted from text, but specific paragraph location in PDF could not be determined.">
+                              Ungrounded
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[9px] text-on-surface-variant font-mono uppercase tracking-widest mt-0.5 opacity-80">
                           {param.parameter_group}
                         </span>
                       </div>
                     </td>
 
                     {/* Original Value */}
-                    <td className="px-md py-3">
-                      <div className="font-mono-md text-mono-md text-on-surface-variant max-w-[150px] truncate" title={param.extracted_value}>
+                    <td className="px-md py-4">
+                      <div 
+                        className={`font-mono text-xs max-w-[180px] truncate ${
+                          param.extracted_value ? 'text-on-surface-variant' : 'text-slate-400 italic'
+                        }`} 
+                        title={param.extracted_value}
+                      >
                         {param.extracted_value || 'Not extracted'}
                       </div>
                     </td>
 
                     {/* Editable / Verified Value */}
-                    <td className="px-md py-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-xs">
+                    <td className="px-md py-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
                         <input 
                           type="text"
                           value={param.edited_value !== null ? param.edited_value : (param.extracted_value || '')}
                           onChange={(e) => handleParamValueChange(param.param_id, param.extracted_value || '', e.target.value)}
-                          className={`w-full h-8 px-2 bg-surface-container-lowest border rounded text-body-sm focus:border-primary focus:ring-0 ${
+                          className={`w-full h-9 px-3 bg-surface-container-lowest border rounded-md text-xs transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
                             param.reviewer_status === 'EDITED' 
-                              ? 'border-amber-400 font-bold bg-amber-50/10' 
-                              : 'border-outline-variant'
+                              ? 'border-amber-400 font-medium bg-amber-50/20 shadow-sm shadow-amber-100' 
+                              : 'border-outline-variant hover:border-slate-400'
                           }`}
+                          placeholder="Type override value..."
                         />
                         {/* Clear Override */}
                         {param.reviewer_status === 'EDITED' && (
                           <button 
                             onClick={() => handleParamValueChange(param.param_id, param.extracted_value || '', param.extracted_value || '')}
-                            className="p-1 hover:bg-surface-container-high rounded text-on-surface-variant"
+                            className="p-1.5 hover:bg-surface-container-high hover:text-primary rounded-md transition-all duration-150 active:scale-95 text-on-surface-variant"
                             title="Reset to Original"
                           >
                             <span className="material-symbols-outlined text-[16px]">restart_alt</span>
@@ -285,35 +309,39 @@ export default function DraftReview() {
                     </td>
 
                     {/* Confidence / Review Actions */}
-                    <td className="px-md py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-xs">
+                    <td className="px-md py-4 text-center select-none" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
                         {param.reviewer_status === 'ACCEPTED' ? (
-                          <span className="material-symbols-outlined text-green-600 font-bold" title="Accepted">check_circle</span>
+                          <span className="material-symbols-outlined text-green-600 font-bold hover:scale-110 transition-transform" title="Accepted">check_circle</span>
                         ) : param.reviewer_status === 'REJECTED' ? (
-                          <span className="material-symbols-outlined text-error font-bold" title="Flagged Issues">error</span>
+                          <span className="material-symbols-outlined text-error font-bold hover:scale-110 transition-transform" title="Flagged Issues">error</span>
                         ) : (
-                          <span className={`px-xs py-0.5 rounded text-[10px] font-bold ${
-                            param.confidence >= 0.9 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold border shadow-sm tracking-wider ${
+                            param.confidence >= 0.85 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                              : param.confidence >= 0.60
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-rose-50 text-rose-700 border-rose-200'
                           }`}>
                             {Math.round(param.confidence * 100)}%
                           </span>
                         )}
                         
                         {/* Quick review action buttons */}
-                        <div className="hidden group-hover:flex items-center gap-xs ml-xs border-l border-outline-variant pl-xs">
+                        <div className="hidden group-hover:flex items-center gap-1.5 ml-2 border-l border-outline-variant/30 pl-2">
                           <button 
                             onClick={() => handleReviewStatus(param.param_id, param.edited_value || param.extracted_value || '', 'ACCEPTED')}
-                            className="p-0.5 hover:bg-emerald-100 hover:text-emerald-800 rounded transition-colors"
+                            className="p-1 hover:bg-emerald-100 hover:text-emerald-800 rounded-md transition-colors active:scale-90"
                             title="Accept"
                           >
-                            <span className="material-symbols-outlined text-[16px]">done</span>
+                            <span className="material-symbols-outlined text-[14px]">done</span>
                           </button>
                           <button 
                             onClick={() => handleReviewStatus(param.param_id, param.edited_value || param.extracted_value || '', 'REJECTED')}
-                            className="p-0.5 hover:bg-red-100 hover:text-error rounded transition-colors"
+                            className="p-1 hover:bg-red-100 hover:text-error rounded-md transition-colors active:scale-90"
                             title="Flag Issues"
                           >
-                            <span className="material-symbols-outlined text-[16px]">close</span>
+                            <span className="material-symbols-outlined text-[14px]">close</span>
                           </button>
                         </div>
                       </div>

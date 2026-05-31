@@ -51,9 +51,15 @@ class TagSuggestionService:
         # Get filename
         contract = await TagSuggestionService._get_contract_filename(contract_id)
         filename = contract.get('original_filename', 'unknown.pdf')
-        
         # Generate suggestions using AI
-        suggestions = TaggingAgent.suggest_tags(document_text, filename)
+        import asyncio
+        loop = asyncio.get_event_loop()
+        suggestions = await loop.run_in_executor(
+            None,
+            TaggingAgent.suggest_tags,
+            document_text,
+            filename
+        )
         
         # Persist suggestions
         for suggestion in suggestions:
@@ -91,6 +97,19 @@ class TagSuggestionService:
         evidence_text: str = None
     ):
         """Save a tag suggestion to database."""
+        # Ensure all incoming VARCHAR2/CLOB database inputs are properly serialized to strings (DPY-3002 guard)
+        def serialize_db_val(v):
+            if v is None:
+                return None
+            if isinstance(v, (dict, list)):
+                import json as _json
+                return _json.dumps(v, ensure_ascii=False)
+            return str(v)
+
+        db_suggested_value = serialize_db_val(suggested_value)
+        db_rationale = serialize_db_val(rationale)
+        db_evidence_text = serialize_db_val(evidence_text)
+
         query = """
             INSERT INTO draft_tag_suggestions (
                 contract_id, field_name, suggested_value, confidence,
@@ -106,10 +125,10 @@ class TagSuggestionService:
                 await cursor.execute(query, {
                     'contract_id': contract_id,
                     'field_name': field_name,
-                    'suggested_value': suggested_value,
+                    'suggested_value': db_suggested_value,
                     'confidence': confidence,
-                    'rationale': rationale,
-                    'evidence_text': evidence_text
+                    'rationale': db_rationale,
+                    'evidence_text': db_evidence_text
                 })
                 await conn.commit()
     

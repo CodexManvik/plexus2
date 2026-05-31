@@ -74,21 +74,70 @@ class TaggingAgent:
         
         prompt = f"""You are a contract analysis expert. Analyze this contract excerpt and suggest metadata tags.
 
-CONTRACT TYPES AND AGREEMENT TYPES:
+### DOCUMENT FILENAME: {filename}
+
+### DOCUMENT EXCERPT (first page):
+{document_text[:4000]}
+
+---
+
+### ALLOWED CONTRACT TYPES AND AGREEMENT TYPES:
 {contract_types_str}
 
-DOCUMENT FILENAME: {filename}
+---
 
-DOCUMENT EXCERPT (first page):
-{document_text[:3000]}
+### INSTRUCTIONS:
+Analyze the document excerpt above and provide suggestions for these fields:
+1. contract_type (must choose strictly from the categories in ALLOWED CONTRACT TYPES above, e.g., "Commercial & Business" or "Technology & IT")
+2. agreement_type (must choose strictly from the sub-types under the chosen contract_type, e.g., "NDA" or "SaaS Agreement")
+3. department (choose the most appropriate corporate department, e.g., Legal, Finance, Procurement, HR, IT, Operations)
+4. customer_name (the counterparty name if clearly mentioned, or null)
 
-Analyze the document and provide suggestions for these fields:
-1. contract_type (choose from the list above)
-2. agreement_type (choose from the sub-types under the contract_type)
-3. department (e.g., Legal, Finance, Procurement, HR, IT, Operations)
-4. customer_name (counterparty name if mentioned)
+Be conservative with confidence scores. Only use >0.8 if you're very certain.
 
-Return ONLY a JSON object with this structure:
+---
+
+### ONE-SHOT SUGGESTION EXAMPLE:
+If a document with filename "nda_draft.pdf" is a Non-Disclosure Agreement between Acme Corp and Wayne Enterprises, the JSON output would look like:
+{{
+  "suggestions": [
+    {{
+      "field_name": "contract_type",
+      "suggested_value": "Commercial & Business",
+      "confidence": 0.95,
+      "rationale": "The document is a standard Non-Disclosure Agreement, which falls under the Commercial & Business category.",
+      "evidence_text": "Non-Disclosure Agreement"
+    }},
+    {{
+      "field_name": "agreement_type",
+      "suggested_value": "NDA",
+      "confidence": 0.95,
+      "rationale": "The title of the agreement explicitly states it is a Non-Disclosure Agreement.",
+      "evidence_text": "Non-Disclosure Agreement"
+    }},
+    {{
+      "field_name": "department",
+      "suggested_value": "Legal",
+      "confidence": 0.90,
+      "rationale": "NDAs are generally managed and reviewed by the Legal department.",
+      "evidence_text": "Non-Disclosure Agreement"
+    }},
+    {{
+      "field_name": "customer_name",
+      "suggested_value": "Acme Corp",
+      "confidence": 0.85,
+      "rationale": "Acme Corp is identified in the preamble as the counterparty.",
+      "evidence_text": "by and between Acme Corp..."
+    }}
+  ]
+}}
+
+---
+
+### RESPONSE FORMAT CONSTRAINT:
+Return ONLY a valid JSON object matching the schema below. Do not add any conversational markdown prefix (such as "Here is the JSON:") or suffix outside of the JSON block itself. Ensure all strings inside the JSON are correctly escaped.
+
+Expected JSON schema:
 {{
   "suggestions": [
     {{
@@ -100,9 +149,7 @@ Return ONLY a JSON object with this structure:
     }},
     ...
   ]
-}}
-
-Be conservative with confidence scores. Only use >0.8 if you're very certain."""
+}}"""
         
         try:
             response = groq_client.call(

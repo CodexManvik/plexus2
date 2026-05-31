@@ -42,17 +42,44 @@ class GroundingAgent:
         
         prompt = f"""You are a document evidence alignment expert. Find which block contains the supporting text.
 
-EXTRACTED VALUE: {extracted_value}
-
-SUPPORTING TEXT (from AI extraction):
-{supporting_text}
-
-CANDIDATE BLOCKS FROM DOCUMENT:
+### CANDIDATE BLOCKS FROM DOCUMENT:
 {candidates_text}
 
-Task: Identify which block contains text that matches or paraphrases the supporting text.
+---
 
-Return ONLY a JSON object:
+### TARGET PARAMETER DETAILS:
+- EXTRACTED VALUE: {extracted_value}
+- SUPPORTING TEXT (to align):
+{supporting_text}
+
+---
+
+### INSTRUCTIONS:
+Identify which block from the CANDIDATE BLOCKS above contains text that exactly matches or paraphrases the SUPPORTING TEXT. 
+
+---
+
+### ONE-SHOT ALIGNMENT EXAMPLE:
+If the supporting text is "entered into on 26th January, 2026" and candidate blocks are:
+BLOCK 1 (ID: 0A1B2C, Page 1):
+"This Agreement is entered into on 26th January, 2026 by and between..."
+BLOCK 2 (ID: 3D4E5F, Page 2):
+"The services shall commence upon execution of..."
+
+Expected JSON output:
+{{
+  "block_number": 1,
+  "matched_text": "This Agreement is entered into on 26th January, 2026",
+  "confidence": 0.95,
+  "reasoning": "BLOCK 1 contains the exact phrase matching the supporting text."
+}}
+
+---
+
+### RESPONSE FORMAT CONSTRAINT:
+Return ONLY a valid JSON object matching the schema below. Do not add any conversational markdown prefix (such as "Here is the JSON:") or suffix outside of the JSON block itself. Ensure all strings inside the JSON are correctly escaped.
+
+Expected JSON schema:
 {{
   "block_number": 1-10 or null,
   "matched_text": "exact text from that block" or null,

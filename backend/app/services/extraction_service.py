@@ -21,9 +21,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Cap concurrent Groq calls.  Groq's rate limit is per-minute token budget,
-# not per-request concurrency, but > 3 simultaneous 70B calls risks 429s.
-_GROQ_SEMAPHORE = asyncio.Semaphore(3)
+# Cap concurrent LLM calls
+# Groq: max 3 concurrent (rate limit on per-minute tokens)
+# Local: max 1 concurrent (slower, single-threaded model)
+_GROQ_SEMAPHORE = asyncio.Semaphore(1 if settings.llm_backend == "local" else 3)
+_BATCH_DELAY = 1.0 if settings.llm_backend == "local" else 0.2  # Delay between batches (seconds)
 
 # Known ISO-3166-1 country names and US-state style jurisdiction strings
 # used by the governing-law deterministic check.
@@ -38,6 +40,97 @@ _KNOWN_JURISDICTIONS = frozenset({
 _CURRENCY_PATTERN = re.compile(
     r"(\$|€|£|¥|₹|inr|usd|eur|gbp|cad|aud|sgd|jpy|\brs\.?\b)", re.IGNORECASE
 )
+
+
+def repair_truncated_json(json_str: str) -> str:
+    """
+    Attempts to repair a truncated JSON string by balancing quotes, braces, and brackets.
+    """
+    json_str = json_str.strip()
+    if not json_str:
+        return "{}"
+        
+    # Standardize string start
+    if not json_str.startswith("{"):
+        start_idx = json_str.find("{")
+        if start_idx != -1:
+            json_str = json_str[start_idx:]
+        else:
+            return "{}"
+
+    # Track state
+    in_string = False
+    escape = False
+    bracket_stack = []
+    repaired_chars = []
+
+    for char in json_str:
+        if escape:
+            repaired_chars.append(char)
+            escape = False
+            continue
+        if char == '\\':
+            repaired_chars.append(char)
+            escape = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            repaired_chars.append(char)
+            continue
+        
+        repaired_chars.append(char)
+        
+        if not in_string:
+            if char in ('{', '['):
+                bracket_stack.append(char)
+            elif char in ('}', ']'):
+                if bracket_stack:
+                    top = bracket_stack[-1]
+                    if (char == '}' and top == '{') or (char == ']' and top == '['):
+                        bracket_stack.pop()
+
+    # If we ended inside a string, close the quote
+    if in_string:
+        repaired_chars.append('"')
+
+    # Close any remaining brackets in reverse order
+    while bracket_stack:
+        top = bracket_stack.pop()
+        if top == '{':
+            repaired_chars.append('}')
+        elif top == '[':
+            repaired_chars.append(']')
+
+    return "".join(repaired_chars)
+
+
+def escape_invalid_json_backslashes(json_str: str) -> str:
+    """
+    Escapes invalid backslash sequences in a JSON string (e.g., '\c' -> '\\c').
+    Valid JSON escapes are: \\", \\\\, \\/, \\b, \\f, \\n, \\r, \\t, \\uXXXX
+    """
+    # Regex to match a backslash that is NOT followed by standard escape chars
+    pattern = re.compile(r'\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})')
+    return pattern.sub(r'\\\\', json_str)
+
+
+def parse_repaired_json(json_str: str) -> dict:
+    """
+    Parses a JSON string, attempting repair if it is truncated or malformed.
+    """
+    import json as _json
+    # Pre-clean invalid backslash escape sequences
+    cleaned_json_str = escape_invalid_json_backslashes(json_str)
+    try:
+        return _json.loads(cleaned_json_str)
+    except Exception as first_err:
+        logger.warning(f"Initial JSON parse failed. Attempting repair: {first_err}")
+        try:
+            repaired_str = repair_truncated_json(cleaned_json_str)
+            return _json.loads(repaired_str)
+        except Exception as second_err:
+            logger.error(f"Repaired JSON parse failed: {second_err}")
+            raise first_err
 
 
 class ExtractionService:
@@ -77,61 +170,146 @@ class ExtractionService:
 
             # ----------------------------------------------------------------
             # Run all 9 batches concurrently, each capped by _GROQ_SEMAPHORE
+            # For local models, this will execute sequentially (semaphore=1)
+            # For Groq, this will execute with up to 3 concurrent requests
             # ----------------------------------------------------------------
             batch_names = list(all_batches.keys())
             total_batches = len(batch_names)
 
-            async def run_one_batch(batch_name: str, parameters: List[str]) -> List[Dict]:
+            async def run_one_batch(batch_index: int, batch_name: str, parameters: List[str]) -> tuple:
+                # Add delay between batches for local models to avoid overwhelming the server
+                if settings.llm_backend == "local" and batch_index > 0:
+                    await asyncio.sleep(_BATCH_DELAY)
+
                 # Build the section-focused context for this batch
                 document_text = ExtractionAgent.build_context_for_batch(batch_name, blocks)
+                model_to_use = settings.local_llm_model if settings.llm_backend == "local" else settings.groq_model_heavy
 
-                async with _GROQ_SEMAPHORE:
-                    logger.info(f"Extracting {batch_name} ({len(document_text)} chars)...")
-                    # async_call offloads the blocking Groq SDK call to a thread executor
-                    response_json = await groq_client.async_call(
-                        model=settings.groq_model_heavy,
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": (
-                                    "You are a contract parameter extraction expert. "
-                                    "Always return valid JSON. Never invent values."
-                                ),
-                            },
-                            {
-                                "role": "user",
-                                "content": ExtractionAgent._build_prompt(batch_name, parameters, document_text),
-                            },
-                        ],
-                        temperature=0.2,
-                        max_tokens=4000,
-                        response_format={"type": "json_object"},
+                async def execute_call(context_str: str) -> str:
+                    async with _GROQ_SEMAPHORE:
+                        logger.info(f"Extracting {batch_name} ({len(context_str)} chars)...")
+                        return await groq_client.async_call(
+                            model=model_to_use,
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": (
+                                        "You are a contract parameter extraction expert. "
+                                        "Always return valid JSON. Never invent values."
+                                    ),
+                                },
+                                {
+                                    "role": "user",
+                                    "content": ExtractionAgent._build_prompt(batch_name, parameters, context_str),
+                                },
+                            ],
+                            temperature=0.1,
+                            max_tokens=4000 if settings.llm_backend == "groq" else 2000,
+                            response_format={"type": "json_object"},
+                        )
+
+                def parse_response(response_json: str) -> List[Dict]:
+                    try:
+                        result = parse_repaired_json(response_json)
+                        extracted_raw = result.get("parameters", [])
+                        extracted_clean = []
+                        for p_obj in extracted_raw:
+                            if isinstance(p_obj, dict) and p_obj.get("parameter_name"):
+                                extracted_clean.append({
+                                    "parameter_name": p_obj["parameter_name"],
+                                    "extracted_value": p_obj.get("extracted_value"),
+                                    "supporting_text": p_obj.get("supporting_text"),
+                                    "confidence": float(p_obj.get("confidence", 0.0)) if p_obj.get("confidence") is not None else 0.0,
+                                    "section_title": p_obj.get("section_title"),
+                                    "notes": p_obj.get("notes"),
+                                })
+                        return extracted_clean
+                    except Exception as parse_err:
+                        logger.error(f"JSON parse and repair failed for {batch_name}: {parse_err}")
+                        return []
+
+                # 1. Run initial section-filtered context extraction
+                resp = await execute_call(document_text)
+                extracted = parse_response(resp)
+
+                # Ensure every parameter has some representation in `extracted`
+                def backfill_missing(extracted_list: List[Dict]):
+                    extracted_names = {p["parameter_name"].lower() for p in extracted_list}
+                    for param in parameters:
+                        if param.lower() not in extracted_names:
+                            extracted_list.append({
+                                "parameter_name": param,
+                                "extracted_value": None,
+                                "supporting_text": None,
+                                "confidence": 0.0,
+                                "section_title": None,
+                                "notes": "Parameter omitted due to LLM response truncation",
+                            })
+
+                backfill_missing(extracted)
+
+                # 2. Check if Full-Document Fallback is triggered (missing_ratio > 0.30) (Change 2)
+                null_or_low_conf_count = sum(
+                    1 for p in extracted
+                    if p.get("extracted_value") is None or p.get("confidence", 0.0) < 0.50
+                )
+                missing_ratio = null_or_low_conf_count / len(parameters)
+                fallback_triggered = False
+
+                if missing_ratio > 0.30:
+                    fallback_triggered = True
+                    logger.info(
+                        f"⚠️ [Fallback Triggered] Batch '{batch_name}' has missing_ratio={missing_ratio:.2f} (> 0.30). "
+                        f"Re-running extraction with full-document context..."
                     )
+                    full_doc_context = ExtractionAgent.build_full_document_context(blocks)
+                    resp_fallback = await execute_call(full_doc_context)
+                    extracted_fallback = parse_response(resp_fallback)
+                    backfill_missing(extracted_fallback)
 
-                import json as _json
-                try:
-                    result = _json.loads(response_json)
-                    extracted = result.get("parameters", [])
-                except Exception as parse_err:
-                    logger.error(f"JSON parse failed for {batch_name}: {parse_err}")
-                    extracted = []
+                    # Compare results: count non-null, high-confidence parameters in both
+                    def score_extracted_set(extracted_list: List[Dict]) -> float:
+                        return sum(p.get("confidence", 0.0) for p in extracted_list if p.get("extracted_value") is not None)
 
-                if not extracted:
-                    # Fallback: return MISSING entries so the contract isn't stuck
-                    extracted = [
-                        {
-                            "parameter_name": p,
-                            "extracted_value": None,
-                            "supporting_text": None,
-                            "confidence": 0.0,
-                            "section_title": None,
-                            "notes": "Extraction returned empty response",
-                        }
-                        for p in parameters
-                    ]
+                    score_initial = score_extracted_set(extracted)
+                    score_fallback = score_extracted_set(extracted_fallback)
 
-                batch_index = batch_names.index(batch_name) + 1
-                progress = 0.05 + (batch_index / total_batches) * 0.45  # 5% → 50%
+                    if score_fallback > score_initial:
+                        logger.info(
+                            f"✓ [Fallback Kept] Full-document context improved batch '{batch_name}' "
+                            f"(score: {score_fallback:.2f} vs initial {score_initial:.2f})"
+                        )
+                        extracted = extracted_fallback
+                        document_text = full_doc_context
+                    else:
+                        logger.info(
+                            f"ℹ [Fallback Dismissed] Initial context was better for batch '{batch_name}' "
+                            f"(score: {score_initial:.2f} vs fallback {score_fallback:.2f})"
+                        )
+
+                # 3. Logging Diagnostics and Metrics (Change 8)
+                null_count = sum(1 for p in extracted if p.get("extracted_value") is None)
+                extracted_count = len(parameters) - null_count
+                logger.info(
+                    f"📊 [Batch Diagnostics] "
+                    f"batch: '{batch_name}', "
+                    f"context_chars: {len(document_text)}, "
+                    f"parameters_requested: {len(parameters)}, "
+                    f"parameters_extracted: {extracted_count}, "
+                    f"parameters_null: {null_count}, "
+                    f"recovery_pass_triggered: {fallback_triggered}"
+                )
+
+                for p in extracted:
+                    if p.get("extracted_value") is None:
+                        logger.info(
+                            f"🔍 [Null Field Log] "
+                            f"parameter: '{p['parameter_name']}', "
+                            f"reason: '{p.get('notes') or 'Genuine omission/truncation'}', "
+                            f"context_used: '{'full_document' if fallback_triggered else 'section'}'"
+                        )
+
+                progress = 0.05 + (batch_index / total_batches) * 0.40  # 5% → 45%
                 await emit_async(contract_id, {
                     "stage":    "EXTRACTION_RUNNING",
                     "message":  f"Completed {batch_name} — {len(extracted)} parameters",
@@ -143,18 +321,23 @@ class ExtractionService:
                 return batch_name, extracted
 
             tasks = [
-                run_one_batch(batch_name, parameters)
-                for batch_name, parameters in all_batches.items()
+                run_one_batch(idx, batch_name, parameters)
+                for idx, (batch_name, parameters) in enumerate(all_batches.items())
             ]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # ----------------------------------------------------------------
-            # Persist all results
+            # Persist all initial results
             # ----------------------------------------------------------------
             total_params = 0
+            model_used = settings.local_llm_model if settings.llm_backend == "local" else settings.groq_model_heavy
+            
             for result in batch_results:
                 if isinstance(result, Exception):
                     logger.error(f"Batch task raised exception: {result}")
+                    continue
+                if not isinstance(result, (list, tuple)) or len(result) != 2:
+                    logger.error(f"Batch task returned unexpected result type: {type(result)}")
                     continue
                 batch_name, extracted = result
                 for param in extracted:
@@ -165,11 +348,25 @@ class ExtractionService:
                         extracted_value=param.get("extracted_value"),
                         supporting_text=param.get("supporting_text"),
                         confidence=param.get("confidence", 0.0),
-                        model_used=settings.groq_model_heavy,
+                        model_used=model_used,
                     )
                     total_params += 1
 
-            logger.info(f"Extraction complete: {total_params} parameters saved")
+            logger.info(f"Initial extraction complete: {total_params} parameters saved")
+
+            # ----------------------------------------------------------------
+            # Recovery Pass (Change 1)
+            # ----------------------------------------------------------------
+            await emit_async(contract_id, {
+                "stage":    "EXTRACTION_RUNNING",
+                "message":  "Running missing-field recovery pass...",
+                "progress": 0.50,
+            })
+            await ExtractionService.recover_missing_fields(
+                contract_id=contract_id,
+                blocks=blocks,
+                model_used=model_used
+            )
 
             # ----------------------------------------------------------------
             # Grounding
@@ -251,6 +448,150 @@ class ExtractionService:
             })
             raise
 
+    @staticmethod
+    async def recover_missing_fields(contract_id: str, blocks: List[Dict], model_used: str):
+        """
+        Missing-field recovery pass (Change 1).
+        Identifies missing/low-confidence fields and re-extracts them using global_clause_search.
+        """
+        # Fetch all draft parameters for this contract that are NULL or confidence < 0.50
+        fetch_query = """
+            SELECT param_id, parameter_name, parameter_group, extracted_value, confidence
+            FROM draft_parameters
+            WHERE contract_id = HEXTORAW(:contract_id)
+              AND (extracted_value IS NULL OR confidence < 0.50)
+        """
+
+        async with db_pool.get_connection() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(fetch_query, {"contract_id": contract_id})
+                rows = await cursor.fetchall()
+
+        if not rows:
+            logger.info("ℹ Recovery pass skipped: 0 missing or low-confidence parameters detected.")
+            return
+
+        logger.info(f"🔄 Starting Missing-Field Recovery Pass for {len(rows)} parameters...")
+
+        # Process each missing parameter individually for maximum precision
+        for row in rows:
+            param_id        = row[0]
+            parameter_name  = row[1]
+            parameter_group = row[2]
+            original_value  = row[3]
+            original_conf   = float(row[4]) if row[4] else 0.0
+
+            if hasattr(original_value, "read"):
+                original_value = await original_value.read()
+
+            logger.info(f"🎯 Recovering parameter: '{parameter_name}' (original: '{original_value}' with conf {original_conf:.2f})...")
+
+            # Build hyper-targeted context using global_clause_search (Change 4 & B)
+            document_text = ExtractionAgent.global_clause_search(parameter_name, blocks)
+            if not document_text:
+                # If search yields nothing, fallback to full-document context (Change 2)
+                document_text = ExtractionAgent.build_full_document_context(blocks)
+
+            # Re-run LLM call specifically for this single parameter
+            # We treat it as a single-item batch
+            async with _GROQ_SEMAPHORE:
+                response_json = await groq_client.async_call(
+                    model=model_used,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are a contract parameter extraction expert. "
+                                "Always return valid JSON. Never invent values."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": ExtractionAgent._build_prompt(parameter_group, [parameter_name], document_text),
+                        },
+                    ],
+                    temperature=0.1,
+                    max_tokens=1000,  # Single parameter needs fewer tokens
+                    response_format={"type": "json_object"},
+                )
+
+            try:
+                result = parse_repaired_json(response_json)
+                extracted_raw = result.get("parameters", [])
+                
+                # Look for the parameter name match
+                recovered_param = None
+                for p_obj in extracted_raw:
+                    if isinstance(p_obj, dict) and p_obj.get("parameter_name", "").lower() == parameter_name.lower():
+                        recovered_param = p_obj
+                        break
+
+                if recovered_param:
+                    recovered_val  = recovered_param.get("extracted_value")
+                    recovered_conf = float(recovered_param.get("confidence", 0.0)) if recovered_param.get("confidence") is not None else 0.0
+                    recovered_text = recovered_param.get("supporting_text")
+                    recovered_title = recovered_param.get("section_title")
+                    recovered_notes = recovered_param.get("notes")
+
+                    # Confidence Floor Gating (Change D)
+                    # Only accept recovery if recovered.confidence >= 0.40 AND supporting_text exists
+                    if recovered_conf >= 0.40 and recovered_text:
+                        # Ensure values are properly serialized to strings to prevent DPY-3002
+                        def serialize_db_val(v):
+                            if v is None:
+                                return None
+                            if isinstance(v, (dict, list)):
+                                import json as _json
+                                return _json.dumps(v, ensure_ascii=False)
+                            return str(v)
+
+                        db_recovered_val = serialize_db_val(recovered_val)
+                        db_recovered_text = serialize_db_val(recovered_text)
+
+                        # History Preservation (Change C)
+                        # Keep history in python logs as notes are not in the DB schema
+                        history_note = (
+                            f"Original: '{original_value}' (conf: {original_conf:.2f}). "
+                            f"Recovered: '{db_recovered_val}' (conf: {recovered_conf:.2f}). "
+                            f"Notes: {recovered_notes or 'none'}"
+                        )
+
+                        logger.info(
+                            f"✓ [Field Recovered] '{parameter_name}': "
+                            f"'{original_value}' (conf: {original_conf:.2f}) → '{db_recovered_val}' (conf: {recovered_conf:.2f})"
+                        )
+                        logger.info(f"📊 [Recovery History] parameter: '{parameter_name}', details: {history_note}")
+
+                        # Update parameter in database using strictly matching schema fields
+                        update_query = """
+                            UPDATE draft_parameters
+                            SET extracted_value = :val,
+                                supporting_text = :text,
+                                confidence = :conf,
+                                validation_status = 'NEEDS_REVIEW'
+                            WHERE param_id = HEXTORAW(:param_id)
+                        """
+
+                        async with db_pool.get_connection() as conn:
+                            async with conn.cursor() as cursor:
+                                await cursor.execute(update_query, {
+                                    "val":      db_recovered_val,
+                                    "text":     db_recovered_text,
+                                    "conf":     recovered_conf,
+                                    "param_id": param_id,
+                                })
+                                await conn.commit()
+                    else:
+                        logger.info(
+                            f"ℹ [Recovery Floor Rejected] recovered parameter '{parameter_name}' "
+                            f"failed floor gate (conf: {recovered_conf:.2f} < 0.40 or supporting_text missing)."
+                        )
+                else:
+                    logger.info(f"ℹ [Recovery Omission] LLM failed to return parameter '{parameter_name}' during recovery pass.")
+
+            except Exception as e:
+                logger.error(f"❌ Recovery pass failed for parameter '{parameter_name}': {e}")
+
     # -------------------------------------------------------------------------
     # Internal helpers
     # -------------------------------------------------------------------------
@@ -268,7 +609,19 @@ class ExtractionService:
         """Persist an extracted parameter, deriving initial validation_status."""
         param_id = uuid.uuid4().hex.upper()
 
-        if extracted_value is None:
+        # Ensure all incoming VARCHAR2/CLOB database inputs are properly serialized to strings (DPY-3002 guard)
+        def serialize_db_val(v):
+            if v is None:
+                return None
+            if isinstance(v, (dict, list)):
+                import json as _json
+                return _json.dumps(v, ensure_ascii=False)
+            return str(v)
+
+        db_extracted_value = serialize_db_val(extracted_value)
+        db_supporting_text = serialize_db_val(supporting_text)
+
+        if db_extracted_value is None:
             validation_status = "MISSING"
         else:
             # Initial status — deterministic rule engine runs later in _validate_parameters
@@ -293,8 +646,8 @@ class ExtractionService:
                     "contract_id":       contract_id,
                     "parameter_name":    parameter_name,
                     "parameter_group":   parameter_group,
-                    "extracted_value":   extracted_value,
-                    "supporting_text":   supporting_text,
+                    "extracted_value":   db_extracted_value,
+                    "supporting_text":   db_supporting_text,
                     "confidence":        confidence,
                     "validation_status": validation_status,
                     "model_used":        model_used,
@@ -339,12 +692,9 @@ class ExtractionService:
                     if grounding_id:
                         grounded_count += 1
                     else:
-                        await cursor.execute(
-                            "UPDATE draft_parameters SET validation_status = 'UNGROUNDED' "
-                            "WHERE param_id = HEXTORAW(:param_id)",
-                            {"param_id": param_id},
-                        )
-                        await conn.commit()
+                        # Relax grounding constraints: do NOT mark as UNGROUNDED or exclude from validation.
+                        # Keep as NEEDS_REVIEW so it gets validated and is reviewed in the UI.
+                        pass
 
         return grounded_count
 
@@ -433,8 +783,11 @@ class ExtractionService:
             issues: List[str] = []
 
             # R5 — Confidence gate (baseline for all params)
-            if conf < 0.80:
-                issues.append(f"confidence {conf:.2f} < 0.80")
+            # 0.60 threshold: catches genuine guesses while allowing implicit
+            # date extractions from Indian MSA preambles (typically 0.65–0.82).
+            if conf < 0.60:
+                issues.append(f"confidence {conf:.2f} < 0.60")
+
 
             # R1 — Date ordering: only applicable to expiry/end date param
             if ("expiry date" in name or "end date" in name) and value and effective_date_val:

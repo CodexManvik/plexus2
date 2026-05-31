@@ -109,74 +109,78 @@ export default function Repository() {
   };
 
   return (
-    <div className="p-lg max-w-[1400px] mx-auto w-full flex-1 overflow-y-auto custom-scrollbar">
+    <div className="p-lg max-w-[1400px] mx-auto w-full flex-1 overflow-y-auto custom-scrollbar bg-surface/30">
       {/* Hero Search Section */}
-      <section className="mb-xl">
-        <div className="flex flex-col gap-sm mb-md">
-          <h1 className="font-display-sm text-display-sm text-primary">Repository Hub</h1>
+      <section className="mb-xl border-b border-slate-100 pb-lg">
+        <div className="flex flex-col gap-xs mb-lg">
+          <h1 className="font-display-sm text-display-sm text-primary font-black tracking-tight">Repository Hub</h1>
           <p className="text-on-surface-variant font-body-lg">
-            Access intelligent contract extracts and document history across the enterprise.
+            Access intelligent contract extracts and unified semantic query history across the enterprise.
           </p>
         </div>
 
         {/* Intelligent Vector Search Input */}
         <form onSubmit={handleAiSearchSubmit} className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: '"FILL" 1' }}>
-              search_spark
-            </span>
-          </div>
-          <input 
-            type="text"
-            value={aiQuestion}
-            onChange={(e) => setAiQuestion(e.target.value)}
-            placeholder="Search using natural language, e.g., 'What is the liability cap in the Global Logistics agreement?'"
-            className="block w-full pl-[52px] pr-[120px] py-xl bg-surface-container-lowest border border-outline-variant rounded-xl text-body-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
-          />
-          <div className="absolute inset-y-0 right-sm flex items-center">
-            <kbd className="hidden sm:inline-flex items-center px-sm py-1 font-mono-md text-mono-md text-on-surface-variant bg-surface-container border border-outline-variant rounded mr-sm">
-              ⌘ K
-            </kbd>
-            <button 
-              type="submit"
-              disabled={aiQueryMutation.isPending}
-              className="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50"
-            >
-              {aiQueryMutation.isPending ? 'Querying...' : 'Query'}
-            </button>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity duration-300"></div>
+          
+          <div className="relative bg-white border border-outline-variant/40 rounded-2xl shadow-sm hover:shadow-md focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-300 flex items-center overflow-hidden">
+            <div className="pl-lg flex items-center pointer-events-none">
+              <span className="material-symbols-outlined text-primary text-[24px] font-bold" style={{ fontVariationSettings: '"FILL" 1' }}>
+                search_spark
+              </span>
+            </div>
+            <input 
+              type="text"
+              value={aiQuestion}
+              onChange={(e) => setAiQuestion(e.target.value)}
+              placeholder="Query agreements using natural language, e.g., 'What is the liability cap in the Global Logistics contract?'"
+              className="w-full pl-md pr-32 py-xl bg-transparent border-none text-body-lg focus:ring-0 outline-none font-semibold placeholder:text-slate-400 placeholder:font-normal"
+            />
+            <div className="absolute right-sm flex items-center gap-xs">
+              <kbd className="hidden sm:inline-flex items-center px-sm py-[3px] font-mono text-[10px] font-extrabold text-on-surface-variant bg-slate-100 border border-slate-200 rounded shadow-sm">
+                CTRL K
+              </kbd>
+              <button 
+                type="submit"
+                disabled={aiQueryMutation.isPending}
+                className="bg-primary hover:bg-primary/95 text-on-primary px-lg py-2.5 rounded-xl font-label-md shadow-md hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 font-bold shrink-0"
+              >
+                {aiQueryMutation.isPending ? 'Running...' : 'Query'}
+              </button>
+            </div>
           </div>
         </form>
 
         {/* AI Assistant response drawer/panel */}
         {(aiQueryMutation.isPending || aiResponse) && (
-          <div className="mt-md p-lg bg-surface-container-lowest border-2 border-primary/20 rounded-xl shadow-lg relative overflow-hidden animate-fadeIn custom-glass">
-            <div className="absolute top-0 left-0 w-2 h-full bg-primary"></div>
+          <div className="mt-md p-lg bg-white border border-primary/20 rounded-2xl shadow-lg relative overflow-hidden animate-fadeIn custom-glass select-none">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-blue-600 to-indigo-600"></div>
             <div className="flex items-start gap-md">
-              <span className="material-symbols-outlined text-primary text-[28px] shrink-0 mt-xs">
+              <span className="material-symbols-outlined text-primary text-[28px] shrink-0 mt-xs" style={{ fontVariationSettings: '"FILL" 1' }}>
                 assistant
               </span>
               <div className="space-y-sm flex-1">
-                <h4 className="font-headline-md text-[14px] text-primary font-bold tracking-tight">
-                  AI ASSISTANT ANSWER
+                <h4 className="text-[11px] text-primary font-black tracking-wider uppercase">
+                  ContractLens AI Assistant
                 </h4>
                 {aiQueryMutation.isPending ? (
-                  <div className="flex items-center gap-xs text-on-surface-variant font-body-md py-sm">
-                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce"></div>
-                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                    <span className="ml-xs">Consulting published vector indexes...</span>
+                  <div className="flex items-center gap-xs text-on-surface-variant font-body-md py-sm font-semibold">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                    <span className="ml-xs text-[12px] text-slate-500 font-semibold">Consulting vector store index...</span>
                   </div>
                 ) : (
-                  <div className="font-body-md text-body-md text-slate-800 leading-relaxed whitespace-pre-line">
+                  <div className="font-body-md text-body-md text-slate-800 leading-relaxed whitespace-pre-line font-medium bg-slate-50/50 p-md border border-slate-100 rounded-xl">
                     {aiResponse}
                   </div>
                 )}
               </div>
               <button 
                 onClick={() => setAiResponse(null)}
-                className="text-on-surface-variant hover:text-primary transition-colors shrink-0"
+                className="text-on-surface-variant hover:text-primary transition-colors shrink-0 w-6 h-6 rounded-full hover:bg-slate-100 flex items-center justify-center"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[16px] font-bold">close</span>
               </button>
             </div>
           </div>
@@ -184,13 +188,13 @@ export default function Repository() {
       </section>
 
       {/* Main Results Workspace */}
-      <div className="flex gap-lg">
+      <div className="flex gap-lg items-start">
         {/* Left Sidebar: Metadata Filters */}
-        <aside className="w-metadata-panel flex-shrink-0 flex flex-col gap-lg">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm">
-            <div className="flex items-center justify-between mb-md">
-              <h3 className="font-headline-md text-label-md uppercase tracking-wider text-on-surface-variant font-bold">
-                Metadata Filters
+        <aside className="w-metadata-panel flex-shrink-0 flex flex-col gap-lg select-none">
+          <div className="bg-white border border-outline-variant/30 rounded-2xl p-md shadow-sm">
+            <div className="flex items-center justify-between mb-md border-b border-slate-100 pb-sm">
+              <h3 className="text-[10px] uppercase tracking-wider text-on-surface-variant font-extrabold">
+                Filters
               </h3>
               <button 
                 onClick={() => {
@@ -199,7 +203,7 @@ export default function Repository() {
                   setContractType('All Types');
                   setMinAccuracy(85);
                 }}
-                className="text-primary font-label-md hover:underline font-bold"
+                className="text-primary hover:text-primary/80 font-bold text-[11px] underline"
               >
                 Clear all
               </button>
@@ -207,17 +211,17 @@ export default function Repository() {
 
             <div className="flex flex-col gap-lg">
               {/* Year Filter */}
-              <div className="flex flex-col gap-sm">
-                <label className="font-label-md text-on-surface font-bold">Year</label>
+              <div className="flex flex-col gap-xs">
+                <label className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold">Year</label>
                 <div className="grid grid-cols-2 gap-xs">
                   {['2024', '2023', '2022', 'Archive'].map((yr) => (
                     <button 
                       key={yr}
                       onClick={() => setSelectedYear(yr)}
-                      className={`py-1.5 px-sm border rounded text-body-sm transition-colors font-bold ${
+                      className={`py-1.5 px-xs border rounded-xl text-[12px] transition-colors font-extrabold select-none ${
                         selectedYear === yr 
-                          ? 'border-primary bg-primary-fixed text-on-primary-fixed'
-                          : 'border-outline-variant bg-surface-container text-body-sm hover:border-primary'
+                          ? 'border-primary bg-primary-fixed text-primary'
+                          : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-primary/30 hover:bg-white'
                       }`}
                     >
                       {yr}
@@ -227,18 +231,18 @@ export default function Repository() {
               </div>
 
               {/* Department Filter */}
-              <div className="flex flex-col gap-sm">
-                <label className="font-label-md text-on-surface font-bold">Department</label>
-                <div className="flex flex-col gap-xs">
+              <div className="flex flex-col gap-xs">
+                <label className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold">Department</label>
+                <div className="flex flex-col gap-xs pt-xs">
                   {['Legal', 'Finance', 'Procurement', 'Sales', 'IT'].map((dept) => (
                     <label key={dept} className="flex items-center gap-sm cursor-pointer group select-none">
                       <input 
                         type="checkbox"
                         checked={selectedDepartments.includes(dept)}
                         onChange={() => toggleDepartment(dept)}
-                        className="w-4 h-4 rounded text-primary border-outline-variant focus:ring-primary"
+                        className="w-4 h-4 rounded text-primary border-outline-variant/50 focus:ring-primary cursor-pointer"
                       />
-                      <span className="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors font-bold">
+                      <span className="text-body-sm text-slate-600 font-semibold group-hover:text-primary transition-colors">
                         {dept === 'Legal' ? 'Legal & Compliance' : dept === 'Sales' ? 'Sales & GTM' : dept}
                       </span>
                     </label>
@@ -247,12 +251,12 @@ export default function Repository() {
               </div>
 
               {/* Type Filter */}
-              <div className="flex flex-col gap-sm">
-                <label className="font-label-md text-on-surface font-bold">Contract Type</label>
+              <div className="flex flex-col gap-xs">
+                <label className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold">Contract Type</label>
                 <select 
                   value={contractType}
                   onChange={(e) => setContractType(e.target.value)}
-                  className="w-full bg-surface-container-low border-outline-variant rounded-lg text-body-sm py-2 px-2 focus:ring-1 focus:ring-primary outline-none"
+                  className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 hover:border-slate-300 rounded-xl text-body-sm py-2 px-2.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold"
                 >
                   <option>All Types</option>
                   <option>Service Agreement</option>
@@ -264,10 +268,10 @@ export default function Repository() {
               </div>
 
               {/* Confidence Score Slider */}
-              <div className="flex flex-col gap-sm pt-sm border-t border-outline-variant">
-                <div className="flex justify-between items-center">
-                  <label className="font-label-md text-on-surface font-bold">Min. Extraction Accuracy</label>
-                  <span className="text-primary font-bold text-label-md">{minAccuracy}%</span>
+              <div className="flex flex-col gap-xs pt-md border-t border-slate-100">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold">Min. Accuracy</label>
+                  <span className="text-primary font-black text-body-sm">{minAccuracy}%</span>
                 </div>
                 <input 
                   type="range" 
@@ -275,32 +279,34 @@ export default function Repository() {
                   max="100" 
                   value={minAccuracy}
                   onChange={(e) => setMinAccuracy(parseInt(e.target.value))}
-                  className="w-full accent-primary h-1.5 bg-surface-container-highest rounded-full cursor-pointer"
+                  className="w-full accent-primary h-1.5 bg-slate-100 rounded-full cursor-pointer hover:accent-primary/95"
                 />
               </div>
             </div>
           </div>
 
           {/* Usage Stats Card */}
-          <div className="bg-primary text-on-primary rounded-xl p-md flex flex-col gap-sm shadow-md">
-            <div className="flex justify-between items-start">
-              <span className="material-symbols-outlined text-primary-fixed">database</span>
-              <span className="bg-primary-fixed/20 px-sm py-0.5 rounded text-[10px] font-bold tracking-tighter uppercase">
-                Live Sync
+          <div className="bg-gradient-to-br from-slate-50 to-indigo-50/50 border border-slate-200/50 rounded-2xl p-lg flex flex-col gap-sm shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-100/30 rounded-full blur-xl -mr-4 -mt-4"></div>
+            
+            <div className="flex justify-between items-start z-10">
+              <span className="material-symbols-outlined text-indigo-600 text-[24px]">database</span>
+              <span className="bg-indigo-100 text-indigo-700 px-sm py-[2px] border border-indigo-200/50 rounded-full text-[9px] font-extrabold tracking-wider uppercase select-none">
+                Schema Active
               </span>
             </div>
-            <div>
-              <h4 className="text-headline-md font-bold">{filteredContracts.length}</h4>
-              <p className="text-body-sm opacity-80">Contracts Matching Scope</p>
+            <div className="z-10 select-none">
+              <h4 className="font-display-sm text-[32px] font-black leading-none text-slate-800 mb-1">{filteredContracts.length}</h4>
+              <p className="text-[11px] text-slate-500 font-bold">Contracts Matching Scope</p>
             </div>
-            <div className="mt-xs pt-xs border-t border-on-primary/20">
-              <div className="flex justify-between text-[11px] font-bold">
-                <span>ORACLE CORPUS QUOTA</span>
+            <div className="mt-xs pt-xs border-t border-slate-200/60 z-10 select-none">
+              <div className="flex justify-between text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
+                <span>Oracle Corpus Quota</span>
                 <span>{filteredContracts.filter(c => c.workflow_state === 'PUBLISHED').length} / 100</span>
               </div>
-              <div className="w-full h-1 bg-on-primary/10 rounded-full mt-1">
+              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
                 <div 
-                  className="bg-primary-fixed h-full rounded-full transition-all duration-300"
+                  className="bg-indigo-600 h-full rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${Math.min(100, (filteredContracts.filter(c => c.workflow_state === 'PUBLISHED').length / 100) * 100)}%` }}
                 ></div>
               </div>
@@ -309,92 +315,94 @@ export default function Repository() {
         </aside>
 
         {/* Right Pane: Grid View of results */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-md">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-md border-b border-slate-100 pb-sm select-none">
             <div className="flex items-center gap-md">
-              <h2 className="font-headline-lg text-headline-lg text-primary">Contracts Catalog</h2>
-              <span className="bg-surface-container-highest text-on-surface-variant px-sm py-1 rounded-full text-[11px] font-bold">
-                Live DB Sync
+              <h2 className="font-headline-lg text-headline-lg text-primary font-black tracking-tight">Contracts Catalog</h2>
+              <span className="bg-slate-100 text-slate-600 px-sm py-[2px] rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                Live Schema
               </span>
             </div>
-            <div className="flex bg-surface-container rounded p-0.5 shadow-sm">
-              <button className="p-1.5 rounded bg-surface-container-lowest shadow-sm">
-                <span className="material-symbols-outlined text-[18px]">grid_view</span>
+            <div className="flex bg-slate-100 border border-slate-200/50 rounded-xl p-0.5 shadow-inner">
+              <button className="p-1.5 rounded-lg bg-white shadow-sm text-primary">
+                <span className="material-symbols-outlined text-[18px] font-bold">grid_view</span>
               </button>
             </div>
           </div>
 
           {isLoading ? (
-            <div className="text-center py-20 text-on-surface-variant font-body-md bg-surface-container-lowest border rounded-xl shadow-sm">
+            <div className="text-center py-20 text-on-surface-variant font-body-md bg-white border border-outline-variant/30 rounded-2xl shadow-sm">
               Querying Oracle schema...
             </div>
           ) : filteredContracts.length === 0 ? (
-            <div className="text-center py-20 text-on-surface-variant font-body-md bg-surface-container-lowest border rounded-xl shadow-sm">
+            <div className="text-center py-20 text-on-surface-variant font-body-md bg-white border border-outline-variant/30 rounded-2xl shadow-sm">
               No matching contracts found. Try clearing filters or uploading new agreements.
             </div>
           ) : (
             /* Bento Grid for Results */
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-lg">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-lg pb-md">
               {filteredContracts.map((contract) => (
                 <div 
                   key={contract.contract_id}
-                  className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-shadow group flex flex-col justify-between"
+                  className="bg-white border border-outline-variant/30 hover:border-primary/20 rounded-2xl overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group flex flex-col justify-between h-[250px]"
                 >
-                  <div className="p-md flex flex-col h-full justify-between gap-md">
+                  <div className="p-md flex flex-col h-full justify-between gap-sm">
                     
                     {/* Header */}
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-start gap-sm mb-1">
-                          <span className="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5">
-                            description
-                          </span>
-                          <h3 className="font-headline-md text-headline-md text-primary leading-tight group-hover:text-secondary transition-colors truncate max-w-[280px]">
+                    <div className="flex justify-between items-start gap-sm">
+                      <div className="flex items-start gap-xs min-w-0">
+                        <span className="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5" style={{ fontVariationSettings: '"FILL" 1' }}>
+                          description
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="font-body-md text-body-md font-extrabold text-primary group-hover:text-indigo-600 transition-colors truncate max-w-[200px]" title={contract.filename}>
                             {contract.filename}
                           </h3>
+                          <p className="text-[10px] text-slate-400 font-mono tracking-tighter truncate">
+                            ID: {contract.contract_id.substring(0, 16)}
+                          </p>
                         </div>
-                        <p className="text-on-surface-variant font-label-md truncate">
-                          ID: {contract.contract_id.substring(0, 13)}...
-                        </p>
                       </div>
-                      {getStatusBadge(contract.workflow_state)}
+                      <div className="shrink-0">
+                        {getStatusBadge(contract.workflow_state)}
+                      </div>
                     </div>
 
                     {/* Meta bento slots */}
-                    <div className="grid grid-cols-2 gap-sm">
-                      <div className="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
-                        <p className="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">Department</p>
-                        <p className="text-body-sm font-bold truncate">
+                    <div className="grid grid-cols-2 gap-xs select-none">
+                      <div className="p-sm bg-slate-50 border border-slate-100 rounded-xl">
+                        <p className="text-slate-400 text-[9px] uppercase font-extrabold mb-[2px]">Department</p>
+                        <p className="text-body-sm font-extrabold text-slate-700 truncate">
                           {contract.department || 'Legal Operations'}
                         </p>
                       </div>
-                      <div className="p-sm bg-surface-container rounded-lg border border-outline-variant/30">
-                        <p className="text-on-surface-variant text-[10px] uppercase font-bold mb-xs">Contract Type</p>
-                        <p className="text-body-sm font-bold truncate">
+                      <div className="p-sm bg-slate-50 border border-slate-100 rounded-xl">
+                        <p className="text-slate-400 text-[9px] uppercase font-extrabold mb-[2px]">Contract Type</p>
+                        <p className="text-body-sm font-extrabold text-slate-700 truncate">
                           {contract.contract_type || 'Master Agreement'}
                         </p>
                       </div>
                     </div>
 
                     {/* Extract summary details */}
-                    <div className="flex flex-col gap-sm flex-1">
+                    <div className="flex flex-col gap-xs flex-grow justify-center pl-xs">
                       <div className="flex items-center gap-sm">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                        <p className="text-body-sm text-on-surface truncate">
-                          Client: <span className="font-bold">{contract.customer_name || 'Acme Corp'}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-primary transition-colors"></div>
+                        <p className="text-[12px] text-slate-700 font-semibold truncate">
+                          Partner: <span className="font-extrabold text-primary">{contract.customer_name || 'Acme Corp'}</span>
                         </p>
                       </div>
                       <div className="flex items-center gap-sm">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                        <p className="text-body-sm text-on-surface-variant truncate">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-primary transition-colors"></div>
+                        <p className="text-[12px] text-slate-500 font-medium truncate">
                           Uploaded: {new Date(contract.uploaded_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="mt-lg pt-md border-t border-outline-variant flex items-center justify-between bg-surface-container-lowest">
-                      <span className="text-on-surface-variant text-[11px] font-mono">
+                    <div className="pt-sm border-t border-slate-100 flex items-center justify-between select-none">
+                      <span className="text-[9px] font-mono font-bold text-slate-400 bg-slate-100 px-sm py-[2px] rounded uppercase">
                         {contract.workflow_state}
                       </span>
                       
@@ -402,18 +410,18 @@ export default function Repository() {
                         {['DRAFT_READY', 'USER_EDITING'].includes(contract.workflow_state) ? (
                           <button 
                             onClick={() => navigate(`/review/${contract.contract_id}`)}
-                            className="bg-primary text-on-primary font-label-md px-md py-1.5 rounded-lg flex items-center gap-xs hover:opacity-90 active:scale-[0.98] transition-all shadow-sm"
+                            className="bg-primary hover:bg-primary/90 text-on-primary font-bold text-label-md px-md py-1.5 rounded-xl flex items-center gap-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
                           >
                             Review Draft
-                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                            <span className="material-symbols-outlined text-[16px] font-bold">edit</span>
                           </button>
                         ) : (
                           <button 
                             onClick={() => navigate(`/review/${contract.contract_id}`)}
-                            className="bg-primary text-on-primary font-label-md px-md py-1.5 rounded-lg flex items-center gap-xs hover:opacity-90 active:scale-[0.98] transition-all shadow-sm"
+                            className="bg-primary hover:bg-primary/90 text-on-primary font-bold text-label-md px-md py-1.5 rounded-xl flex items-center gap-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
                           >
                             Open Document
-                            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                            <span className="material-symbols-outlined text-[16px] font-bold">arrow_forward</span>
                           </button>
                         )}
                       </div>
