@@ -150,7 +150,7 @@ class ExtractionAgent:
     _BATCH_SECTION_HINTS: Dict[str, List[str]] = {
         "Batch 1: Metadata & Dates": [
             # Standard English contract openers
-            "recital", "whereas", "preamble", "background",
+            "recital", "recitals", "whereas", "preamble", "background",
             # Date label keywords
             "effective date", "agreement date", "execution date",
             "commencement date", "signing date", "signed on",
@@ -161,8 +161,8 @@ class ExtractionAgent:
             "term", "duration", "renewal", "validity",
             "initial term", "commencement",
             # Expanded metadata hints (Change 3)
-            "extension", "extend", "renewed", "renewal", "effective from",
-            "commencing", "commence", "shall continue",
+            "extension", "extend", "extended", "renewed", "renewal", "effective from",
+            "commencing", "commenced", "commence", "shall continue",
             # Title keywords
             "master service agreement", "service agreement",
             "non-disclosure", "memorandum", "letter of intent",
@@ -175,15 +175,15 @@ class ExtractionAgent:
             "pvt. ltd", "private limited", "inc.", "llp",
         ],
         "Batch 3: Scope & Deliverables": [
-            "scope", "deliverable", "services", "work", "project",
-            "objective", "schedule", "milestone",
+            "scope", "deliverable", "deliverables", "services", "work", "project",
+            "objective", "schedule", "milestone", "milestones",
             "statement of work", "sow", "annexure", "schedule a",
             "description of services",
         ],
         "Batch 4: Financial Terms": [
-            "payment", "price", "consideration", "fee", "invoice",
-            "tax", "currency", "cost", "billing", "rate",
-            "financial", "compensation", "milestone",
+            "payment", "price", "consideration", "fee", "fees", "invoice", "invoices", "invoicing",
+            "tax", "taxes", "currency", "cost", "billing", "rate",
+            "financial", "compensation", "milestone", "milestones",
             "escalation", "gst", "tds", "withholding",
             "purchase order", "po number",
             # Expanded financial hints (Change 3)
@@ -192,7 +192,7 @@ class ExtractionAgent:
             "out of pocket",
         ],
         "Batch 5: Legal & Compliance": [
-            "governing law", "jurisdiction", "arbitration", "dispute",
+            "governing law", "jurisdiction", "arbitration", "dispute", "disputes",
             "compliance", "anti-bribery", "anti-corruption",
             "data protection", "privacy", "gdpr", "pdpa",
             "confidential", "intellectual property", "ip rights",
@@ -200,32 +200,35 @@ class ExtractionAgent:
             # Expanded legal hints (Change 3)
             "laws of india", "exclusive jurisdiction", "competent courts",
             "venue", "dispute resolution", "arbitral tribunal",
-            "arbitrator", "conciliation",
+            "arbitrator", "arbitrators", "conciliation",
         ],
         "Batch 6: Risk & Liability": [
-            "liability", "limitation", "indemnif", "warranty",
+            "liability", "limitation", "limitations",
+            "indemnify", "indemnification", "indemnity", "indemnified", "indemnities",
+            "warranty", "warranties", "warranted",
             "insurance", "force majeure", "consequential",
             "damages", "risk", "aggregate liability",
         ],
         "Batch 7: Performance & Penalties": [
-            "sla", "service level", "kpi", "penalty",
-            "liquidated damages", "credit", "incentive",
+            "sla", "service level", "kpi", "kpis", "penalty", "penalties",
+            "liquidated damages", "credit", "credits", "incentive", "incentives",
             "bonus", "performance", "escalation matrix",
             "response time", "uptime",
         ],
         "Batch 8: Termination & Exit": [
-            "terminat", "notice", "exit", "transition", "breach",
-            "cure", "convenience", "cause", "post-termination",
+            "terminate", "termination", "terminating", "terminated",
+            "notice", "notices", "exit", "transition", "breach", "breaches",
+            "cure", "convenience", "cause", "post-termination", "post termination",
             "wind-down", "handover",
             # Expanded termination hints (Change 3)
-            "termination", "terminate", "termination for convenience",
+            "termination for convenience",
             "termination for cause", "material breach", "cure period",
-            "transition assistance", "exit", "post termination",
+            "transition assistance", "exit strategy",
         ],
         "Batch 9: Data & Confidentiality": [
-            "confidential", "data storage", "data processing",
-            "security standard", "breach notification",
-            "subcontractor", "data retention", "personal data",
+            "confidential", "confidentiality", "data storage", "data processing",
+            "security standard", "security standards", "breach notification",
+            "subcontractor", "subcontractors", "data retention", "personal data",
             "data localisation", "encryption",
         ],
     }
@@ -263,6 +266,27 @@ class ExtractionAgent:
     # ---------------------------------------------------------------------------
 
     @staticmethod
+    def _is_precise_match(text: str, hints: List[str]) -> bool:
+        """Check if any hint matches precisely in text with word boundaries for word hints."""
+        import re
+        if not hints:
+            return False
+        
+        text_lower = text.lower()
+        for hint in hints:
+            hint_lower = hint.lower()
+            # For letters and numbers, require clean word boundaries to prevent false substring matches (e.g. matching 'determine' on hint 'term')
+            if re.search(r'[a-zA-Z0-9]', hint_lower):
+                escaped = re.escape(hint_lower)
+                pattern = r'\b' + escaped + r'\b'
+                if re.search(pattern, text_lower):
+                    return True
+            else:
+                if hint_lower in text_lower:
+                    return True
+        return False
+
+    @staticmethod
     def build_context_for_batch(batch_name: str, blocks: List[Dict]) -> str:
         """
         Select semantically relevant blocks for a batch and build the
@@ -270,52 +294,123 @@ class ExtractionAgent:
 
         Strategy:
         1. For Batch 1 (Metadata & Dates): ALWAYS include the first
-           _PREAMBLE_BLOCKS blocks regardless of hint matching, because
-           contract metadata lives in the preamble and the preamble is
-           invariably at the top of the document.
-        2. Score every block against the batch's section keywords, searching
-           the FULL raw_text (not just the first 120 chars).
-        3. Collect all matching blocks plus a ±_CONTEXT_WINDOW sliding window.
-        4. Preserve section_heading as a markdown ## header.
-        5. Truncate at dynamic limit (4500 for local, 14000 for groq).
-        6. If still nothing matched, fall back to the entire document (truncated).
+           _PREAMBLE_BLOCKS blocks regardless of hint matching.
+        2. Score every block against the batch's keywords, prioritizing heading
+           matches and multi-word matches over generic single words.
+        3. Sort blocks by descending score and select them (plus their context windows)
+           within the character budget limit.
+        4. Sort the selected block indices chronologically to preserve document order.
+        5. If still nothing matched, fall back to the entire document (truncated).
         """
-        # Both local and Groq backends use the full _CHUNK_CHAR_LIMIT (14,000 chars)
-        # to ensure that term and signature blocks are not truncated.
+        import re
         limit = _CHUNK_CHAR_LIMIT
         hints = ExtractionAgent._BATCH_SECTION_HINTS.get(batch_name, [])
         n = len(blocks)
-        matched_indices: set = set()
-
-        # ── Batch 1 preamble guarantee ──────────────────────────────────────
-        # Metadata & Dates information is always in the opening section.
-        # Add the first _PREAMBLE_BLOCKS unconditionally so the LLM always
-        # sees the title, execution clause, and date references.
+        
+        # Initialize selected indices
+        selected_indices = set()
+        
+        # Batch 1 preamble guarantee
         if batch_name == "Batch 1: Metadata & Dates":
             for i in range(min(_PREAMBLE_BLOCKS, n)):
-                matched_indices.add(i)
+                selected_indices.add(i)
 
-        # ── Hint-based matching (full raw_text search) ───────────────────────
+        # Helper to estimate length of constructed text
+        def estimate_text_length(indices_set) -> int:
+            length = 0
+            last_h = None
+            for idx in sorted(list(indices_set)):
+                block = blocks[idx]
+                heading = block.get("section_heading")
+                raw_text = str(block.get("raw_text") or "").strip()
+                if not raw_text:
+                    continue
+                if heading and heading != last_h:
+                    length += len(heading) + 7
+                    last_h = heading
+                elif block.get("block_type") == "heading":
+                    length += len(raw_text) + 7
+                    last_h = raw_text
+                    continue
+                length += len(raw_text) + 1
+            return length
+
+        # Score blocks
+        scored_blocks = []
         for idx, block in enumerate(blocks):
+            if batch_name == "Batch 1: Metadata & Dates" and idx < _PREAMBLE_BLOCKS:
+                continue
+
+            score = 0
             heading = str(block.get("section_heading") or "").lower()
-            # FIX: search full raw_text, not just first 120 chars
-            full_text = str(block.get("raw_text") or "").lower()
-            candidate = heading + " " + full_text
+            raw_text = str(block.get("raw_text") or "").lower()
+            block_type = str(block.get("block_type") or "").lower()
+            candidate = heading + " " + raw_text
 
-            if any(hint in candidate for hint in hints):
-                for offset in range(-_CONTEXT_WINDOW, _CONTEXT_WINDOW + 1):
-                    neighbour = idx + offset
-                    if 0 <= neighbour < n:
-                        matched_indices.add(neighbour)
+            for hint in hints:
+                hint_lower = hint.lower()
+                
+                if re.search(r'[a-zA-Z0-9]', hint_lower):
+                    pattern = r'\b' + re.escape(hint_lower) + r'\b'
+                    if re.search(pattern, candidate):
+                        if re.search(pattern, heading):
+                            score += 15
+                        elif block_type == "heading" and re.search(pattern, raw_text):
+                            score += 10
+                        else:
+                            if ' ' in hint_lower:
+                                score += 8
+                            elif hint_lower in ("term", "party", "parties", "payment", "notice", "services", "client", "vendor", "agreement"):
+                                score += 1
+                            else:
+                                score += 5
+                else:
+                    if hint_lower in heading:
+                        score += 10
+                    elif hint_lower in raw_text:
+                        score += 3
 
-        # Fall back to entire document if nothing matched
-        selected_indices = sorted(matched_indices) if matched_indices else list(range(n))
+            if score > 0:
+                scored_blocks.append((score, idx))
 
-        # ── Build text with section markers ──────────────────────────────────
+        # Sort by score descending, then by idx ascending
+        scored_blocks.sort(key=lambda x: (-x[0], x[1]))
+
+        # Select blocks within character budget
+        for score, idx in scored_blocks:
+            window_indices = set()
+            for offset in range(-_CONTEXT_WINDOW, _CONTEXT_WINDOW + 1):
+                neighbour = idx + offset
+                if 0 <= neighbour < n:
+                    window_indices.add(neighbour)
+
+            proposed_set = selected_indices.union(window_indices)
+            proposed_len = estimate_text_length(proposed_set)
+            
+            if proposed_len <= limit:
+                selected_indices = proposed_set
+            else:
+                proposed_single = selected_indices.union({idx})
+                if estimate_text_length(proposed_single) <= limit:
+                    selected_indices = proposed_single
+                if estimate_text_length(selected_indices) >= limit * 0.90:
+                    break
+
+        # Fallback if empty
+        if not selected_indices:
+            current_set = set()
+            for idx in range(n):
+                current_set.add(idx)
+                if estimate_text_length(current_set) > limit:
+                    current_set.remove(idx)
+                    break
+            selected_indices = current_set
+
+        # Build text in chronological order
         parts: List[str] = []
         last_heading: Optional[str] = None
 
-        for idx in selected_indices:
+        for idx in sorted(list(selected_indices)):
             block = blocks[idx]
             heading = block.get("section_heading")
             raw_text = str(block.get("raw_text") or "").strip()
@@ -335,7 +430,6 @@ class ExtractionAgent:
 
         document_text = "\n".join(parts)
 
-        # ── Truncate ──────────────────────────────────────────────────────────
         if len(document_text) > limit:
             document_text = document_text[:limit]
             last_space = document_text.rfind(" ")
@@ -504,30 +598,25 @@ class ExtractionAgent:
 
 ### EXTRACTION RULES:
 
-1. **Dates** — Indian contracts use many formats. Accept ALL of these:
+1. **Factual Extraction Only** — Extract only values that are directly and explicitly supported by the document text. Never invent, extrapolate, or assume values. If a value is not present in the text, return `null`. Missing values are perfectly acceptable. Do not attempt to complete or predict absent details.
+
+2. **Dates** — Do not infer or calculate dates that are not explicitly written. Accept and normalize standard formats to ISO (YYYY-MM-DD):
    - "26th January, 2026" → "2026-01-26"
    - "January 26, 2026" → "2026-01-26"
    - "26/01/2026" or "26.01.2026" → "2026-01-26"
-   - Dates embedded in preamble: "entered into as of the 1st day of January, 2026" → "2026-01-01"
-   - Preserve the original format in supporting_text; use ISO in extracted_value.
+   - Preamble inline dates: "entered into as of the 1st day of January, 2026" → "2026-01-01"
+   Preserve the exact original text format in `supporting_text`.
 
-2. **Affiliates / Subsidiaries** — Only extract explicitly named affiliate/subsidiary corporate entities. Do NOT extract generic legal placeholders like successors, assigns, representatives, agents, employees, or permitted assignees. If no specific affiliate corporate entity is explicitly named, return null.
+3. **No Inferred Values** — Do not calculate contract values, payment milestones, pricing figures, or legal terms that are not explicitly present in the document.
 
-3. **Inferences & Normalizations** — Do not return null simply because a value is not explicitly labeled. Infer contract fields when they are clearly stated in prose:
-   - "This Agreement shall remain valid for 24 months commencing 21-Oct-2024..." → End Date / Expiry Date = "2026-10-20"
-   - "payment within thirty (30) working days after end of month" → Payment Terms = "Net 30 Working Days"
-   - "laws of India" or "governed by Indian Law" → Governing Law = "India"
-   - "Either party may terminate with 30 days notice" → Notice Period = "30 Days"
-   - "The parties may extend the agreement by mutual consent" → Renewal Terms = "Mutual Consent"
+4. **Affiliates / Subsidiaries** — Only extract explicitly named corporate entities. Do NOT extract generic legal placeholders like successors, assigns, representatives, agents, employees, or permitted assignees. If none are named, return `null`.
 
-4. **Null Policy** — Return null ONLY when the information is genuinely absent from the contract text. Prefer low-confidence candidate extractions over null if there is any plausible prose evidence (such as implied values or related sentences).
+5. **Verbatim supporting_text** — The supporting_text MUST be a verbatim, exact character-for-character quote from the provided source contract text. Do not paraphrase, summarize, or edit.
 
-5. **supporting_text** — must be a VERBATIM excerpt from the contract text above. Never paraphrase. Include the surrounding sentence for context.
-
-6. **confidence** — be conservative:
-   - Explicit label + value (e.g. "Effective Date: 1 Jan 2026"): 0.90–0.95
-   - Implied/inferred value: 0.60–0.80
-   - Absent or uncertain: 0.0–0.40
+6. **Confidence Calibration** — Confidence must strictly reflect certainty:
+   - Explicitly stated value: 0.90–1.00
+   - Partially implied but highly certain value: 0.60–0.80
+   - Unsupported or absent: 0.00–0.40 (and return `null` for the extracted_value)
 
 ---
 

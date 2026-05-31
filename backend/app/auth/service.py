@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 class AuthService:
     """Handles all authentication and user management operations."""
+
+    # Mitigate concurrent refresh token reuse race conditions in web applications
+    _RECENTLY_REVOKED_TOKENS = {}
     
     @staticmethod
     def hash_password(password: str) -> str:
@@ -167,7 +170,7 @@ class AuthService:
         query = """
             SELECT user_id, email, full_name, role, is_active, created_at, updated_at
             FROM users
-            WHERE user_id = :user_id
+            WHERE user_id = HEXTORAW(:user_id)
         """
         
         async with db_pool.get_connection() as conn:
@@ -187,15 +190,21 @@ class AuthService:
                     'created_at': row[5],
                     'updated_at': row[6]
                 }
-    
+
+    @staticmethod
+    def fingerprint_token(token: str) -> str:
+        """Generate a deterministic SHA256 fingerprint for a token."""
+        import hashlib as _hashlib
+        return _hashlib.sha256(token.encode('utf-8')).hexdigest()
+
     @staticmethod
     async def store_refresh_token(user_id: str, token: str, expires_at: datetime):
-        """Store refresh token hash in database."""
-        token_hash = AuthService.hash_password(token)
+        """Store refresh token fingerprint in database."""
+        token_hash = AuthService.fingerprint_token(token)
         
         query = """
             INSERT INTO refresh_tokens (user_id, token_hash, expires_at, revoked)
-            VALUES (:user_id, :token_hash, :expires_at, 0)
+            VALUES (HEXTORAW(:user_id), :token_hash, :expires_at, 0)
         """
         
         await execute_query(query, {
@@ -213,8 +222,49 @@ class AuthService:
             WHERE token_hash = :token_hash
         """
         
-        token_hash = AuthService.hash_password(token)
+        token_hash = AuthService.fingerprint_token(token)
+        AuthService._RECENTLY_REVOKED_TOKENS[token_hash] = datetime.utcnow()
+        
+        # Clean up old keys (older than 60 seconds) to prevent memory leak
+        now = datetime.utcnow()
+        expired_keys = [
+            k for k, t in AuthService._RECENTLY_REVOKED_TOKENS.items()
+            if now - t > timedelta(seconds=60)
+        ]
+        for k in expired_keys:
+            AuthService._RECENTLY_REVOKED_TOKENS.pop(k, None)
+            
         await execute_query(query, {'token_hash': token_hash})
+
+    @staticmethod
+    async def is_refresh_token_valid(token: str) -> bool:
+        """Check if refresh token exists in database, is active, and not expired."""
+        token_hash = AuthService.fingerprint_token(token)
+        
+        # Grace period check (15 seconds) to allow concurrent client refreshes (Change 9)
+        if token_hash in AuthService._RECENTLY_REVOKED_TOKENS:
+            revoked_at = AuthService._RECENTLY_REVOKED_TOKENS[token_hash]
+            if datetime.utcnow() - revoked_at < timedelta(seconds=15):
+                logger.info("Race condition mitigation: Allowing recently revoked refresh token within 15s grace period.")
+                return True
+
+        query = """
+            SELECT revoked, expires_at
+            FROM refresh_tokens
+            WHERE token_hash = :token_hash
+        """
+        async with db_pool.get_connection() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(query, {'token_hash': token_hash})
+                row = await cursor.fetchone()
+                if not row:
+                    return False
+                revoked, expires_at = row[0], row[1]
+                if revoked == 1:
+                    return False
+                if expires_at < datetime.utcnow():
+                    return False
+                return True
     
     @staticmethod
     async def authenticate_user(email: str, password: str) -> Optional[dict]:

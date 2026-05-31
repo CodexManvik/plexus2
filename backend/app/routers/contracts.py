@@ -102,7 +102,7 @@ async def get_contract(
                    workflow_state, uploaded_by, reviewed_by, approved_by,
                    uploaded_at, approved_at, published_at
             FROM contracts
-            WHERE contract_id = :contract_id
+            WHERE contract_id = HEXTORAW(:contract_id)
         """
         
         async with db_pool.get_connection() as conn:
@@ -158,13 +158,13 @@ async def delete_contract(
     try:
         # Delete in reverse dependency order
         queries = [
-            "DELETE FROM draft_grounding_records WHERE param_id IN (SELECT param_id FROM draft_parameters WHERE contract_id = :contract_id)",
-            "DELETE FROM draft_parameters WHERE contract_id = :contract_id",
-            "DELETE FROM draft_tag_suggestions WHERE contract_id = :contract_id",
-            "DELETE FROM published_parameters WHERE contract_id = :contract_id",
-            "DELETE FROM document_blocks WHERE contract_id = :contract_id",
-            "DELETE FROM workflow_transitions WHERE contract_id = :contract_id",
-            "DELETE FROM contracts WHERE contract_id = :contract_id"
+            "DELETE FROM draft_grounding_records WHERE param_id IN (SELECT param_id FROM draft_parameters WHERE contract_id = HEXTORAW(:contract_id))",
+            "DELETE FROM draft_parameters WHERE contract_id = HEXTORAW(:contract_id)",
+            "DELETE FROM draft_tag_suggestions WHERE contract_id = HEXTORAW(:contract_id)",
+            "DELETE FROM published_parameters WHERE contract_id = HEXTORAW(:contract_id)",
+            "DELETE FROM document_blocks WHERE contract_id = HEXTORAW(:contract_id)",
+            "DELETE FROM workflow_transitions WHERE contract_id = HEXTORAW(:contract_id)",
+            "DELETE FROM contracts WHERE contract_id = HEXTORAW(:contract_id)"
         ]
         
         async with db_pool.get_connection() as conn:
@@ -197,7 +197,7 @@ async def get_contract_pdf_url(
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    "SELECT oci_object_key, mime_type FROM contracts WHERE contract_id = :contract_id",
+                    "SELECT oci_object_key, mime_type FROM contracts WHERE contract_id = HEXTORAW(:contract_id)",
                     {'contract_id': contract_id}
                 )
                 row = await cursor.fetchone()
@@ -278,7 +278,7 @@ async def get_contract_pdf(
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    "SELECT oci_object_key, original_filename, mime_type FROM contracts WHERE contract_id = :contract_id",
+                    "SELECT oci_object_key, original_filename, mime_type FROM contracts WHERE contract_id = HEXTORAW(:contract_id)",
                     {'contract_id': contract_id}
                 )
                 row = await cursor.fetchone()

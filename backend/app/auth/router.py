@@ -135,6 +135,14 @@ async def refresh_token(request: RefreshTokenRequest):
             detail="User not found or inactive",
             headers={"WWW-Authenticate": "Bearer"}
         )
+
+    # Validate active/revocation status of refresh token in database (P0 Security)
+    if not await AuthService.is_refresh_token_valid(request.refresh_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is expired, revoked, or invalid",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     
     # Revoke old refresh token
     await AuthService.revoke_refresh_token(request.refresh_token)

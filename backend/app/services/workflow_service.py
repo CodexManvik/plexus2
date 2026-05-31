@@ -38,7 +38,7 @@ class WorkflowService:
     @staticmethod
     async def get_current_state(contract_id: str) -> Optional[str]:
         """Get current workflow state for a contract."""
-        query = "SELECT workflow_state FROM contracts WHERE contract_id = :contract_id"
+        query = "SELECT workflow_state FROM contracts WHERE contract_id = HEXTORAW(:contract_id)"
         
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
@@ -91,13 +91,13 @@ class WorkflowService:
             UPDATE contracts
             SET workflow_state = :to_state,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE contract_id = :contract_id
+            WHERE contract_id = HEXTORAW(:contract_id)
         """
         
         # Record transition
         transition_query = """
             INSERT INTO workflow_transitions (contract_id, from_state, to_state, triggered_by, reason)
-            VALUES (:contract_id, :from_state, :to_state, :triggered_by, :reason)
+            VALUES (HEXTORAW(:contract_id), :from_state, :to_state, HEXTORAW(:triggered_by), :reason)
         """
         
         async with db_pool.get_connection() as conn:
@@ -113,7 +113,7 @@ class WorkflowService:
                     'contract_id': contract_id,
                     'from_state': current_state,
                     'to_state': to_state,
-                    'triggered_by': user_id,
+                    'triggered_by': user_id or None,
                     'reason': reason
                 })
                 
@@ -138,9 +138,9 @@ class WorkflowService:
     async def get_transition_history(contract_id: str) -> list:
         """Get full transition history for a contract."""
         query = """
-            SELECT transition_id, from_state, to_state, triggered_by, reason, created_at
+            SELECT transition_id, from_state, to_state, RAWTOHEX(triggered_by), reason, created_at
             FROM workflow_transitions
-            WHERE contract_id = :contract_id
+            WHERE contract_id = HEXTORAW(:contract_id)
             ORDER BY created_at ASC
         """
         

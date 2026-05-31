@@ -46,30 +46,48 @@ class AuditService:
                 old_value, new_value, metadata
             )
             VALUES (
-                :contract_id, :user_id, :action, :entity_type, :entity_id,
+                HEXTORAW(:contract_id), HEXTORAW(:user_id), :action, :entity_type, :entity_id,
                 :old_value, :new_value, :metadata
             )
         """
         
-        # Serialize complex values to JSON strings
-        old_value_str = json.dumps(old_value) if old_value is not None and not isinstance(old_value, str) else old_value
-        new_value_str = json.dumps(new_value) if new_value is not None and not isinstance(new_value, str) else new_value
-        metadata_str = json.dumps(metadata) if metadata else None
-        
+        def safe_serialize(obj: Any) -> Optional[str]:
+            if obj is None:
+                return None
+            if isinstance(obj, str):
+                return obj
+            try:
+                return json.dumps(obj, ensure_ascii=False, default=str)
+            except Exception:
+                try:
+                    return str(obj)
+                except Exception:
+                    return "[Serialization Failed]"
+
         try:
+            # Truncate string inputs to comply with VARCHAR2(100) database schema
+            action_clean = str(action)[:100] if action else "UNKNOWN"
+            entity_type_clean = str(entity_type)[:100] if entity_type else None
+            entity_id_clean = str(entity_id)[:100] if entity_id else None
+
+            # Serialize complex payloads safely
+            old_value_str = safe_serialize(old_value)
+            new_value_str = safe_serialize(new_value)
+            metadata_str = safe_serialize(metadata)
+            
             await execute_query(query, {
-                'contract_id': contract_id,
-                'user_id': user_id,
-                'action': action,
-                'entity_type': entity_type,
-                'entity_id': entity_id,
+                'contract_id': contract_id or None,
+                'user_id': user_id or None,
+                'action': action_clean,
+                'entity_type': entity_type_clean,
+                'entity_id': entity_id_clean,
                 'old_value': old_value_str,
                 'new_value': new_value_str,
                 'metadata': metadata_str
             })
         except Exception as e:
-            # Audit logging should never break the main flow
-            logger.error(f"Failed to write audit log: {e}")
+            # Audit logging should never break the main flow (P2 Failsafe Isolation)
+            logger.error(f"⚠️ Failsafe isolated: Failed to write audit log: {e}")
     
     @staticmethod
     async def query_logs(
@@ -91,11 +109,11 @@ class AuditService:
         params = {}
         
         if contract_id:
-            conditions.append("contract_id = :contract_id")
+            conditions.append("contract_id = HEXTORAW(:contract_id)")
             params['contract_id'] = contract_id
         
         if user_id:
-            conditions.append("user_id = :user_id")
+            conditions.append("user_id = HEXTORAW(:user_id)")
             params['user_id'] = user_id
         
         if action:

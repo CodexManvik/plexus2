@@ -25,17 +25,9 @@ class GroundingService:
     ) -> Optional[str]:
         """
         Ground a parameter to its source block using 4-stage resolution chain.
+        Candidate narrowing (P1) prioritize primary section blocks.
         
         Chain: EXACT → NORMALIZED → FUZZY → LLM_ALIGNED
-        
-        Args:
-            contract_id: Contract UUID
-            param_id: Parameter UUID
-            supporting_text: Supporting text from extraction
-            extracted_value: Extracted value
-        
-        Returns:
-            grounding_id if successful, None if failed
         """
         if not supporting_text:
             logger.warning(f"No supporting text for parameter {param_id}")
@@ -47,41 +39,91 @@ class GroundingService:
         if not blocks:
             logger.warning(f"No blocks found for contract {contract_id}")
             return None
+
+        # 1. Fetch parameter_group for candidate narrowing (P1 Section-Aware)
+        parameter_group = ""
+        group_query = "SELECT parameter_group FROM draft_parameters WHERE param_id = HEXTORAW(:param_id)"
+        try:
+            async with db_pool.get_connection() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute(group_query, {"param_id": param_id})
+                    row = await cursor.fetchone()
+                    if row:
+                        parameter_group = row[0]
+        except Exception as db_err:
+            logger.warning(f"Failed to fetch parameter_group for narrowing: {db_err}")
+
+        # 2. Narrow down primary blocks based on section hints
+        primary_blocks = []
+        fallback_blocks = []
         
-        # Stage 1: Exact match
-        result = GroundingService._exact_match(supporting_text, blocks)
-        if result:
-            block, matched_text, method = result
-            return await GroundingService._save_grounding(
-                param_id, block, matched_text, 1.0, method
-            )
+        if parameter_group:
+            from ..agents.extraction_agent import ExtractionAgent
+            hints = ExtractionAgent._BATCH_SECTION_HINTS.get(parameter_group, [])
+            for block in blocks:
+                heading = str(block.get('section_heading') or '').lower()
+                raw_text = str(block.get('raw_text') or '').lower()
+                candidate = heading + " " + raw_text
+                if ExtractionAgent._is_precise_match(candidate, hints):
+                    primary_blocks.append(block)
+                else:
+                    fallback_blocks.append(block)
+        else:
+            primary_blocks = blocks
 
-        # Stage 2: Normalized match (case+whitespace insensitive, punctuation stripped)
-        result = GroundingService._normalized_match(supporting_text, blocks)
-        if result:
-            block, matched_text, method = result
-            return await GroundingService._save_grounding(
-                param_id, block, matched_text, 0.95, method
-            )
+        # 3. First Pass: Run matching chain against prioritized primary_blocks
+        if primary_blocks:
+            # Stage 1: Exact match
+            result = GroundingService._exact_match(supporting_text, primary_blocks)
+            if result:
+                block, matched_text, method = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, 1.0, method)
 
-        # Stage 3: Jaccard token-overlap (robust against OCR normalization and
-        # partial LLM quotes — checks word-set overlap rather than char sequences)
-        result = GroundingService._jaccard_match(supporting_text, blocks)
-        if result:
-            block, matched_text, method, score = result
-            return await GroundingService._save_grounding(
-                param_id, block, matched_text, score, method
-            )
+            # Stage 2: Normalized match
+            result = GroundingService._normalized_match(supporting_text, primary_blocks)
+            if result:
+                block, matched_text, method = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, 0.95, method)
 
-        # Stage 4: SequenceMatcher fuzzy (char-level, threshold 0.65)
-        result = GroundingService._fuzzy_match(supporting_text, blocks)
-        if result:
-            block, matched_text, method, score = result
-            return await GroundingService._save_grounding(
-                param_id, block, matched_text, score, method
-            )
+            # Stage 3: Jaccard token-overlap
+            result = GroundingService._jaccard_match(supporting_text, primary_blocks)
+            if result:
+                block, matched_text, method, score = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, score, method)
 
-        # Stage 5: LLM alignment (expensive — last resort)
+            # Stage 4: SequenceMatcher fuzzy
+            result = GroundingService._fuzzy_match(supporting_text, primary_blocks)
+            if result:
+                block, matched_text, method, score = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, score, method)
+
+        # 4. Second Pass: Run matching chain against fallback_blocks
+        if fallback_blocks:
+            # Stage 1: Exact match
+            result = GroundingService._exact_match(supporting_text, fallback_blocks)
+            if result:
+                block, matched_text, method = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, 1.0, method)
+
+            # Stage 2: Normalized match
+            result = GroundingService._normalized_match(supporting_text, fallback_blocks)
+            if result:
+                block, matched_text, method = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, 0.95, method)
+
+            # Stage 3: Jaccard token-overlap
+            result = GroundingService._jaccard_match(supporting_text, fallback_blocks)
+            if result:
+                block, matched_text, method, score = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, score, method)
+
+            # Stage 4: SequenceMatcher fuzzy
+            result = GroundingService._fuzzy_match(supporting_text, fallback_blocks)
+            if result:
+                block, matched_text, method, score = result
+                return await GroundingService._save_grounding(param_id, block, matched_text, score, method)
+
+        # Stage 5: LLM alignment (expensive — last resort) over all blocks
         import asyncio
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
@@ -184,12 +226,12 @@ class GroundingService:
     
     @staticmethod
     async def _get_blocks(contract_id: str) -> list:
-        """Get all blocks for a contract."""
+        """Get all blocks for a contract (wrapped in HEXTORAW, includes section_heading)."""
         query = """
             SELECT block_id, page_number, raw_text, normalized_text,
-                   bbox_x1, bbox_y1, bbox_x2, bbox_y2
+                   bbox_x1, bbox_y1, bbox_x2, bbox_y2, section_heading
             FROM document_blocks
-            WHERE contract_id = :contract_id
+            WHERE contract_id = HEXTORAW(:contract_id)
             ORDER BY page_number, block_order
         """
         
@@ -217,7 +259,8 @@ class GroundingService:
                         'bbox_x1': row[4],
                         'bbox_y1': row[5],
                         'bbox_x2': row[6],
-                        'bbox_y2': row[7]
+                        'bbox_y2': row[7],
+                        'section_heading': row[8]
                     })
                 
                 return blocks

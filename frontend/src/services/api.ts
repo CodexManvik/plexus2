@@ -30,6 +30,20 @@ api.interceptors.request.use(
 );
 
 // Response interceptor to handle token refresh
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -37,7 +51,23 @@ api.interceptors.response.use(
     
     // If 401 and not already retried, attempt token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
       
       const { refreshToken, clearAuth } = useAuthStore.getState();
       
@@ -60,6 +90,10 @@ api.interceptors.response.use(
           refreshToken: refresh_token,
         });
         
+        // Process queued requests
+        processQueue(null, access_token);
+        isRefreshing = false;
+        
         // Retry original request with new token
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
@@ -67,6 +101,10 @@ api.interceptors.response.use(
         
         return api(originalRequest);
       } catch (refreshError) {
+        // Process queued requests with error
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        
         // Refresh failed, clear auth and redirect to login
         clearAuth();
         window.location.href = '/login';

@@ -43,6 +43,7 @@ class ParsingService:
 
         try:
             doc = fitz.open(file_path)
+            blocks_to_insert = []
 
             for page_num in range(len(doc)):
                 page = doc[page_num]
@@ -92,23 +93,25 @@ class ParsingService:
                             block_type = "heading"
                             current_heading = raw_text
 
-                        # Insert block — pass current running heading
-                        await ParsingService._insert_block(
-                            contract_id=contract_id,
-                            page_number=page_num + 1,
-                            block_type=block_type,
-                            raw_text=raw_text,
-                            normalized_text=raw_text.lower().strip(),
-                            bbox_x1=norm_x1,
-                            bbox_y1=norm_y1,
-                            bbox_x2=norm_x2,
-                            bbox_y2=norm_y2,
-                            block_order=block_order,
-                            section_heading=current_heading,
-                        )
+                        blocks_to_insert.append({
+                            "page_number":    page_num + 1,
+                            "block_type":     block_type,
+                            "raw_text":       raw_text,
+                            "normalized_text": raw_text.lower().strip(),
+                            "bbox_x1":        norm_x1,
+                            "bbox_y1":        norm_y1,
+                            "bbox_x2":        norm_x2,
+                            "bbox_y2":        norm_y2,
+                            "block_order":    block_order,
+                            "section_heading": current_heading,
+                            "table_context":  None
+                        })
 
                         blocks_created += 1
                         block_order += 1
+
+            if blocks_to_insert:
+                await ParsingService._insert_blocks_bulk(contract_id, blocks_to_insert)
 
             doc.close()
             logger.info(f"Parsed PDF: {blocks_created} blocks from {len(doc)} pages")
@@ -149,6 +152,7 @@ class ParsingService:
             doc = Document(file_path)
             block_order = 0
             current_heading: Optional[str] = None
+            blocks_to_insert = []
 
             # Rough page tracking by word count
             word_total = 0
@@ -164,8 +168,20 @@ class ParsingService:
                 word_total += len(raw_text.split())
                 page_num = max(1, (word_total // _WORDS_PER_PAGE) + 1)
 
-                # Update running heading whenever we hit a Heading style
+                # Custom Heading Heuristics (Tier P3 Item 14):
+                # Identify headings when native Word styles are omitted
+                is_heading = False
                 if para.style.name.startswith("Heading"):
+                    is_heading = True
+                elif len(raw_text) < 120 and raw_text.isupper():
+                    is_heading = True
+                elif len(raw_text) < 120:
+                    # Heuristic: Check if the text is entirely bolded
+                    non_empty_runs = [r for r in para.runs if r.text.strip()]
+                    if non_empty_runs and all(r.bold for r in non_empty_runs):
+                        is_heading = True
+
+                if is_heading:
                     block_type = "heading"
                     current_heading = raw_text
                 else:
@@ -173,22 +189,25 @@ class ParsingService:
 
                 # bbox_y encodes relative position so overlays have a distinct
                 # y-coordinate even though DOCX has no real bounding boxes.
-                await ParsingService._insert_block(
-                    contract_id=contract_id,
-                    page_number=page_num,
-                    block_type=block_type,
-                    raw_text=raw_text,
-                    normalized_text=raw_text.lower().strip(),
-                    bbox_x1=0.0,
-                    bbox_y1=round(block_order / 1000, 6),
-                    bbox_x2=1.0,
-                    bbox_y2=round((block_order + 1) / 1000, 6),
-                    block_order=block_order,
-                    section_heading=current_heading,
-                )
+                blocks_to_insert.append({
+                    "page_number":    page_num,
+                    "block_type":     block_type,
+                    "raw_text":       raw_text,
+                    "normalized_text": raw_text.lower().strip(),
+                    "bbox_x1":        0.0,
+                    "bbox_y1":        round(block_order / 1000, 6),
+                    "bbox_x2":        1.0,
+                    "bbox_y2":        round((block_order + 1) / 1000, 6),
+                    "block_order":    block_order,
+                    "section_heading": current_heading,
+                    "table_context":  None
+                })
 
                 blocks_created += 1
                 block_order += 1
+
+            if blocks_to_insert:
+                await ParsingService._insert_blocks_bulk(contract_id, blocks_to_insert)
 
             logger.info(f"Parsed DOCX: {blocks_created} blocks")
 
@@ -202,6 +221,56 @@ class ParsingService:
         except Exception as e:
             logger.error(f"DOCX parsing failed: {e}")
             raise
+
+    @staticmethod
+    async def _insert_blocks_bulk(contract_id: str, blocks: List[Dict]):
+        """
+        Bulk insert document blocks inside a single transaction with clean rollback (Tier P2 Item 9).
+        Also wraps contract_id in HEXTORAW to prevent implicit conversion performance degradation.
+        """
+        if not blocks:
+            return
+
+        query = """
+            INSERT INTO document_blocks (
+                contract_id, page_number, block_type, raw_text, normalized_text,
+                bbox_x1, bbox_y1, bbox_x2, bbox_y2, block_order,
+                section_heading, table_context
+            ) VALUES (
+                HEXTORAW(:contract_id), :page_number, :block_type, :raw_text, :normalized_text,
+                :bbox_x1, :bbox_y1, :bbox_x2, :bbox_y2, :block_order,
+                :section_heading, :table_context
+            )
+        """
+
+        # Prepare bind parameter dicts
+        binds = []
+        for b in blocks:
+            binds.append({
+                "contract_id":     contract_id,
+                "page_number":     b["page_number"],
+                "block_type":      b["block_type"],
+                "raw_text":        b["raw_text"],
+                "normalized_text": b["normalized_text"],
+                "bbox_x1":         b["bbox_x1"],
+                "bbox_y1":         b["bbox_y1"],
+                "bbox_x2":         b["bbox_x2"],
+                "bbox_y2":         b["bbox_y2"],
+                "block_order":     b["block_order"],
+                "section_heading": b["section_heading"],
+                "table_context":   b["table_context"],
+            })
+
+        async with db_pool.get_connection() as conn:
+            async with conn.cursor() as cursor:
+                try:
+                    await cursor.executemany(query, binds)
+                    await conn.commit()
+                    logger.info(f"Successfully bulk inserted {len(blocks)} blocks for contract {contract_id}")
+                except Exception as err:
+                    await conn.rollback()
+                    logger.error(f"❌ Failed to bulk insert blocks for contract {contract_id}, rolling back: {err}")
+                    raise
 
     @staticmethod
     async def _insert_block(
@@ -218,14 +287,14 @@ class ParsingService:
         section_heading: Optional[str] = None,
         table_context: Optional[str] = None,
     ):
-        """Insert a canonical block into the database."""
+        """Insert a canonical block into the database (backward compatible, wrapped in HEXTORAW)."""
         query = """
             INSERT INTO document_blocks (
                 contract_id, page_number, block_type, raw_text, normalized_text,
                 bbox_x1, bbox_y1, bbox_x2, bbox_y2, block_order,
                 section_heading, table_context
             ) VALUES (
-                :contract_id, :page_number, :block_type, :raw_text, :normalized_text,
+                HEXTORAW(:contract_id), :page_number, :block_type, :raw_text, :normalized_text,
                 :bbox_x1, :bbox_y1, :bbox_x2, :bbox_y2, :block_order,
                 :section_heading, :table_context
             )
@@ -251,11 +320,11 @@ class ParsingService:
 
     @staticmethod
     async def _update_page_count(contract_id: str, page_count: int):
-        """Update contract page count."""
+        """Update contract page count (wrapped in HEXTORAW)."""
         query = """
             UPDATE contracts
             SET page_count = :page_count
-            WHERE contract_id = :contract_id
+            WHERE contract_id = HEXTORAW(:contract_id)
         """
 
         async with db_pool.get_connection() as conn:
@@ -268,13 +337,13 @@ class ParsingService:
 
     @staticmethod
     async def get_blocks_for_contract(contract_id: str) -> List[Dict]:
-        """Retrieve all blocks for a contract."""
+        """Retrieve all blocks for a contract (wrapped in HEXTORAW)."""
         query = """
             SELECT block_id, page_number, block_type, raw_text, normalized_text,
                    bbox_x1, bbox_y1, bbox_x2, bbox_y2, block_order,
                    section_heading, table_context
             FROM document_blocks
-            WHERE contract_id = :contract_id
+            WHERE contract_id = HEXTORAW(:contract_id)
             ORDER BY page_number, block_order
         """
 

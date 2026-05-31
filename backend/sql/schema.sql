@@ -1,6 +1,6 @@
 -- PLEXUS Contract Intelligence Platform
 -- Oracle 26ai Database Schema
--- Version 1.0
+-- Version 1.1 (Unified)
 
 -- Clean up all existing tables and their constraints
 DROP TABLE draft_tag_suggestions CASCADE CONSTRAINTS;
@@ -10,13 +10,19 @@ DROP TABLE published_parameters CASCADE CONSTRAINTS;
 DROP TABLE document_blocks CASCADE CONSTRAINTS;
 DROP TABLE contracts CASCADE CONSTRAINTS;
 DROP TABLE refresh_tokens CASCADE CONSTRAINTS;
+DROP TABLE parameter_schemas CASCADE CONSTRAINTS;
+DROP TABLE workflow_transitions CASCADE CONSTRAINTS;
+DROP TABLE review_sessions CASCADE CONSTRAINTS;
+DROP TABLE audit_log CASCADE CONSTRAINTS;
+DROP TABLE draft_embeddings CASCADE CONSTRAINTS;
+DROP TABLE published_embeddings CASCADE CONSTRAINTS;
 DROP TABLE users CASCADE CONSTRAINTS;
 
 -- Clear out structural trash from recycling bin
 PURGE RECYCLEBIN;
 
 -- ============================================================================
--- AUTH TABLES
+-- AUTH & USER TABLES
 -- ============================================================================
 
 CREATE TABLE users (
@@ -30,7 +36,6 @@ CREATE TABLE users (
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 
 CREATE TABLE refresh_tokens (
@@ -44,6 +49,25 @@ CREATE TABLE refresh_tokens (
 
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+
+-- ============================================================================
+-- SCHEMAS & CONFIGURATIONS
+-- ============================================================================
+
+CREATE TABLE parameter_schemas (
+    schema_id      RAW(16)       DEFAULT SYS_GUID()        PRIMARY KEY,
+    name           VARCHAR2(255) NOT NULL,
+    logic          VARCHAR2(500),
+    contract_types VARCHAR2(500),
+    category       VARCHAR2(50)  CHECK (category IN ('Commercial', 'Vendor', 'Internal')),
+    priority       VARCHAR2(10)  CHECK (priority IN ('High', 'Med', 'Low')),
+    created_by     RAW(16)       REFERENCES users(user_id),
+    created_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_param_schemas_cat ON parameter_schemas(category);
+CREATE INDEX idx_param_schemas_prio ON parameter_schemas(priority);
 
 -- ============================================================================
 -- CONTRACT CORE
@@ -317,6 +341,14 @@ BEGIN
 END;
 /
 
+CREATE OR REPLACE TRIGGER trg_param_schemas_updated
+BEFORE UPDATE ON parameter_schemas
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+
 -- ============================================================================
 -- INITIAL SEED DATA (Admin User)
 -- ============================================================================
@@ -326,7 +358,7 @@ END;
 INSERT INTO users (email, password_hash, full_name, role, is_active)
 VALUES (
     'admin@plexus.local',
-    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqYqYqYqYq',  -- Replace with actual bcrypt hash
+    '$2b$12$RZxQ0kcaa1RJ7zFEVeD4Gu.6itbDZsajqpVnvVQpEGm1xywAOBqf.',
     'System Administrator',
     'admin',
     1

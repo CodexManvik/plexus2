@@ -113,6 +113,30 @@ class EmbeddingService:
         )
         return total_written
 
+    @staticmethod
+    async def embed_query(query: str) -> Optional[List[float]]:
+        """
+        Embed a search query using Cohere Embed v3 with input_type="search_query".
+        """
+        client = EmbeddingService._get_client()
+
+        def _sync_embed() -> List[float]:
+            response = client.embed(
+                texts=[query],
+                model=settings.cohere_embed_model,
+                input_type="search_query",
+            )
+            return response.embeddings[0]
+
+        loop = asyncio.get_event_loop()
+        try:
+            return await loop.run_in_executor(
+                None, functools.partial(_sync_embed)
+            )
+        except Exception as exc:
+            logger.error(f"Cohere embed query failed: {exc}")
+            return None
+
     # -------------------------------------------------------------------------
     # Private helpers
     # -------------------------------------------------------------------------

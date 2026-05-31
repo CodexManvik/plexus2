@@ -24,6 +24,21 @@ logger = logging.getLogger(__name__)
 class ReviewSessionService:
 
     @staticmethod
+    def _sanitize_raw_uuid(val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        # Clean any hyphens and whitespace
+        clean = val.replace("-", "").strip()
+        if len(clean) == 32:
+            try:
+                # Validate that it is a valid hex string
+                int(clean, 16)
+                return clean.upper()
+            except ValueError:
+                pass
+        return None
+
+    @staticmethod
     async def save_session(
         contract_id: str,
         user_id: str,
@@ -35,6 +50,8 @@ class ReviewSessionService:
 
         Returns the session_id.
         """
+        sanitized_param_id = ReviewSessionService._sanitize_raw_uuid(last_param_id)
+
         # Try UPDATE first
         update_query = """
             UPDATE review_sessions
@@ -50,7 +67,7 @@ class ReviewSessionService:
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(update_query, {
-                    "last_param_id":   last_param_id or "",
+                    "last_param_id":   sanitized_param_id,  # Will bind NULL if None, which is perfectly safe
                     "scroll_position": scroll_position,
                     "contract_id":     contract_id,
                     "user_id":         user_id,
@@ -93,7 +110,7 @@ class ReviewSessionService:
                     "session_id":      session_id,
                     "contract_id":     contract_id,
                     "user_id":         user_id,
-                    "last_param_id":   last_param_id or ("0" * 32),
+                    "last_param_id":   sanitized_param_id,  # Safe NULL or valid hex
                     "scroll_position": scroll_position,
                 })
                 await conn.commit()

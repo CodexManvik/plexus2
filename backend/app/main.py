@@ -44,15 +44,37 @@ logger = logging.getLogger(__name__)
 _DEV_ADMIN_UUID = '89BF383A5F3548AC98108947D04C2B43'
 
 
-async def seed_admin_user() -> None:
+async def seed_dev_users() -> None:
     """
-    Upsert the dev admin user using MERGE INTO.
+    Upsert the dev users using MERGE INTO.
     Only called when SEED_ADMIN=true in .env.
-    The UUID is stable so FK constraints in audit_log resolve correctly.
+    The UUIDs are stable so FK constraints in audit_log resolve correctly.
     """
     from .database import db_pool
 
-    password_hash = AuthService.hash_password('Admin@Plexus1')
+    users_to_seed = [
+        {
+            'user_id':       '89BF383A5F3548AC98108947D04C2B43',
+            'email':         'admin@plexus.com',
+            'password':      'Admin@123456',
+            'full_name':     'System Administrator',
+            'role':          'admin',
+        },
+        {
+            'user_id':       '79BF383A5F3548AC98108947D04C2B44',
+            'email':         'user@plexus.com',
+            'password':      'User@123456',
+            'full_name':     'Operation User',
+            'role':          'operation_user',
+        },
+        {
+            'user_id':       '69BF383A5F3548AC98108947D04C2B45',
+            'email':         'head@plexus.com',
+            'password':      'Head@123456',
+            'full_name':     'Operation Head',
+            'role':          'operation_head',
+        }
+    ]
 
     # RAW(16) literals in Oracle must be supplied as HEXTORAW(:hex_value)
     merge_sql = """
@@ -73,16 +95,18 @@ async def seed_admin_user() -> None:
 
     async with db_pool.get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute(merge_sql, {
-                'user_id':       _DEV_ADMIN_UUID,
-                'email':         'admin@plexus.com',
-                'password_hash': password_hash,
-                'full_name':     'System Administrator',
-                'role':          'admin',
-            })
+            for u in users_to_seed:
+                password_hash = AuthService.hash_password(u['password'])
+                await cursor.execute(merge_sql, {
+                    'user_id':       u['user_id'],
+                    'email':         u['email'],
+                    'password_hash': password_hash,
+                    'full_name':     u['full_name'],
+                    'role':          u['role'],
+                })
             await conn.commit()
 
-    logger.info("✓ Dev admin user seeded (admin@plexus.com / Admin@Plexus1)")
+    logger.info("✓ Dev users seeded (admin@plexus.com, user@plexus.com, head@plexus.com)")
 
 
 @asynccontextmanager
@@ -115,9 +139,9 @@ async def lifespan(app: FastAPI):
 
     if settings.seed_admin:
         try:
-            await seed_admin_user()
+            await seed_dev_users()
         except Exception as e:
-            logger.error(f"Admin seed failed: {e}")
+            logger.error(f"Admin/dev user seed failed: {e}")
             raise
 
     logger.info("✓ Plexus backend started successfully")

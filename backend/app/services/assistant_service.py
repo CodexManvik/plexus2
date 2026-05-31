@@ -73,28 +73,108 @@ class AssistantService:
         limit: int
     ) -> List[dict]:
         """
-        Search published parameters using keyword matching.
-        
-        PUBLISHED DATA ONLY — never query draft tables here.
-        
-        Note: In production, this would use vector search with embeddings.
-        For Phase 5, we use simple keyword matching.
+        Search published parameters using Native Oracle 26ai Vector Similarity,
+        with strict workflow state filtering (PUBLISHED only).
+        Falls back to keyword matching if vector search is unavailable or returns 0.
         """
-        # Normalize question for keyword extraction
+        from ..services.embedding_service import EmbeddingService
+        
+        # 1. Attempt Vector Similarity Search (P0)
+        query_vector = await EmbeddingService.embed_query(question)
+        if query_vector is not None:
+            try:
+                # Oracle TO_VECTOR expects "[f1,f2,…]" format
+                vec_str = "[" + ",".join(f"{v:.8f}" for v in query_vector) + "]"
+                
+                # Build vector query clauses
+                where_clauses = ["c.workflow_state = 'PUBLISHED'"]
+                params = {'limit': limit, 'query_vec': vec_str}
+                
+                if contract_ids:
+                    placeholders = ','.join([f'HEXTORAW(:cid{i})' for i in range(len(contract_ids))])
+                    where_clauses.append(f"p.contract_id IN ({placeholders})")
+                    for i, cid in enumerate(contract_ids):
+                        params[f'cid{i}'] = cid
+                
+                where_clause = " AND ".join(where_clauses)
+                
+                # Cosine distance native vector search
+                vector_query = f"""
+                    SELECT p.pub_param_id, p.contract_id, p.parameter_name, p.parameter_group,
+                           p.final_value, p.supporting_text, p.confidence,
+                           p.page_number, p.bbox_x1, p.bbox_y1, p.bbox_x2, p.bbox_y2,
+                           c.original_filename, c.customer_name, c.contract_type,
+                           VECTOR_DISTANCE(e.embedding_vector, TO_VECTOR(:query_vec), COSINE) AS distance
+                    FROM published_embeddings e
+                    JOIN published_parameters p ON e.pub_param_id = p.pub_param_id
+                    JOIN contracts c ON p.contract_id = c.contract_id
+                    WHERE {where_clause}
+                    ORDER BY distance ASC
+                    FETCH FIRST :limit ROWS ONLY
+                """
+                
+                async with db_pool.get_connection() as conn:
+                    async with conn.cursor() as cursor:
+                        await cursor.execute(vector_query, params)
+                        rows = await cursor.fetchall()
+                        
+                        results = []
+                        for row in rows:
+                            final_value = row[4]
+                            supporting_text = row[5]
+                            if hasattr(final_value, 'read'):
+                                final_value = await final_value.read()
+                            if hasattr(supporting_text, 'read'):
+                                supporting_text = await supporting_text.read()
+                                
+                            results.append({
+                                'pub_param_id': row[0],
+                                'contract_id': row[1],
+                                'parameter_name': row[2],
+                                'parameter_group': row[3],
+                                'final_value': final_value,
+                                'supporting_text': supporting_text,
+                                'confidence': float(row[6]) if row[6] else 0.0,
+                                'page_number': row[7],
+                                'bbox_x1': float(row[8]) if row[8] else None,
+                                'bbox_y1': float(row[9]) if row[9] else None,
+                                'bbox_x2': float(row[10]) if row[10] else None,
+                                'bbox_y2': float(row[11]) if row[11] else None,
+                                'contract_name': row[12],
+                                'customer_name': row[13],
+                                'contract_type': row[14],
+                                'distance': float(row[15]) if row[15] is not None else 0.0
+                            })
+                            
+                        if results:
+                            # Assistant Retrieval Logging (P0)
+                            logger.info(
+                                f"🔍 [Vector Search] query: '{question}', top_k: {limit}, matches found: {len(results)}"
+                            )
+                            for idx, r in enumerate(results):
+                                logger.info(
+                                    f"    [{idx+1}] pub_param_id: {r['pub_param_id']}, contract_id: {r['contract_id']}, "
+                                    f"distance: {r['distance']:.4f}, param: '{r['parameter_name']}'"
+                                )
+                            return results
+                            
+            except Exception as vector_err:
+                logger.error(f"❌ Oracle Native Vector Search failed, falling back to keywords: {vector_err}")
+
+        # 2. Fallback Keyword Search (P0)
+        logger.info("ℹ Falling back to keyword search for assistant query.")
         norm_question = normalize_text(question)
         keywords = norm_question.split()[:5]  # Top 5 keywords
         
-        # Build query
-        where_clauses = ["1=1"]
+        where_clauses = ["c.workflow_state = 'PUBLISHED'"]
         params = {'limit': limit}
         
         if contract_ids:
-            placeholders = ','.join([f':cid{i}' for i in range(len(contract_ids))])
+            placeholders = ','.join([f'HEXTORAW(:cid{i})' for i in range(len(contract_ids))])
             where_clauses.append(f"p.contract_id IN ({placeholders})")
             for i, cid in enumerate(contract_ids):
                 params[f'cid{i}'] = cid
         
-        # Keyword matching (simple text search)
         keyword_conditions = []
         for i, keyword in enumerate(keywords):
             keyword_conditions.append(
@@ -124,14 +204,22 @@ class AssistantService:
                 await cursor.execute(query, params)
                 rows = await cursor.fetchall()
                 
-                return [
-                    {
+                results = []
+                for row in rows:
+                    final_value = row[4]
+                    supporting_text = row[5]
+                    if hasattr(final_value, 'read'):
+                        final_value = await final_value.read()
+                    if hasattr(supporting_text, 'read'):
+                        supporting_text = await supporting_text.read()
+                        
+                    results.append({
                         'pub_param_id': row[0],
                         'contract_id': row[1],
                         'parameter_name': row[2],
                         'parameter_group': row[3],
-                        'final_value': row[4],
-                        'supporting_text': row[5],
+                        'final_value': final_value,
+                        'supporting_text': supporting_text,
                         'confidence': float(row[6]) if row[6] else 0.0,
                         'page_number': row[7],
                         'bbox_x1': float(row[8]) if row[8] else None,
@@ -141,9 +229,8 @@ class AssistantService:
                         'contract_name': row[12],
                         'customer_name': row[13],
                         'contract_type': row[14]
-                    }
-                    for row in rows
-                ]
+                    })
+                return results
     
     @staticmethod
     async def get_published_contracts() -> List[dict]:

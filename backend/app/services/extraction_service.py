@@ -105,7 +105,7 @@ def repair_truncated_json(json_str: str) -> str:
 
 
 def escape_invalid_json_backslashes(json_str: str) -> str:
-    """
+    r"""
     Escapes invalid backslash sequences in a JSON string (e.g., '\c' -> '\\c').
     Valid JSON escapes are: \\", \\\\, \\/, \\b, \\f, \\n, \\r, \\t, \\uXXXX
     """
@@ -147,6 +147,8 @@ class ExtractionService:
         Batches execute concurrently (up to _GROQ_SEMAPHORE limit) using
         groq_client.async_call() to avoid blocking the event loop.
         """
+        start_tokens = groq_client.total_tokens_used
+        fallback_triggered_count = 0
         try:
             await WorkflowService.transition(
                 contract_id=contract_id,
@@ -177,6 +179,7 @@ class ExtractionService:
             total_batches = len(batch_names)
 
             async def run_one_batch(batch_index: int, batch_name: str, parameters: List[str]) -> tuple:
+                nonlocal fallback_triggered_count
                 # Add delay between batches for local models to avoid overwhelming the server
                 if settings.llm_backend == "local" and batch_index > 0:
                     await asyncio.sleep(_BATCH_DELAY)
@@ -248,18 +251,25 @@ class ExtractionService:
 
                 backfill_missing(extracted)
 
-                # 2. Check if Full-Document Fallback is triggered (missing_ratio > 0.30) (Change 2)
+                # 2. Check if Full-Document Fallback is triggered (Change 2 & 10)
                 null_or_low_conf_count = sum(
                     1 for p in extracted
                     if p.get("extracted_value") is None or p.get("confidence", 0.0) < 0.50
                 )
                 missing_ratio = null_or_low_conf_count / len(parameters)
+                
+                # High-fidelity trigger optimization (Change 10):
+                # If context was complete (not truncated) and section is non-empty, any missing fields are genuinely absent.
+                limit_threshold = 14000 * 0.95
+                context_truncated = len(document_text) >= limit_threshold
+                context_empty = len(document_text) < 200
+                
                 fallback_triggered = False
-
-                if missing_ratio > 0.30:
+                if (missing_ratio > 0.30 and context_truncated) or context_empty:
                     fallback_triggered = True
+                    fallback_triggered_count += 1
                     logger.info(
-                        f"⚠️ [Fallback Triggered] Batch '{batch_name}' has missing_ratio={missing_ratio:.2f} (> 0.30). "
+                        f"⚠️ [Fallback Triggered] Batch '{batch_name}' (len: {len(document_text)}) has missing_ratio={missing_ratio:.2f} (> 0.30). "
                         f"Re-running extraction with full-document context..."
                     )
                     full_doc_context = ExtractionAgent.build_full_document_context(blocks)
@@ -362,7 +372,7 @@ class ExtractionService:
                 "message":  "Running missing-field recovery pass...",
                 "progress": 0.50,
             })
-            await ExtractionService.recover_missing_fields(
+            recover_attempted, recover_succeeded = await ExtractionService.recover_missing_fields(
                 contract_id=contract_id,
                 blocks=blocks,
                 model_used=model_used
@@ -403,6 +413,35 @@ class ExtractionService:
 
             validated_count = await ExtractionService._validate_parameters(contract_id)
 
+            # Fetch total parameters for grounding audit
+            fetch_count_query = "SELECT COUNT(*) FROM draft_parameters WHERE contract_id = HEXTORAW(:contract_id)"
+            async with db_pool.get_connection() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute(fetch_count_query, {"contract_id": contract_id})
+                    row = await cursor.fetchone()
+                    total_params_db = row[0] if row else total_params
+
+            # ----------------------------------------------------------------
+            # Extraction Efficiency Audit (Tier P2 Item 11)
+            # ----------------------------------------------------------------
+            end_tokens = groq_client.total_tokens_used
+            tokens_per_contract = end_tokens - start_tokens
+            total_llm_calls = len(all_batches) + fallback_triggered_count + recover_attempted
+            tokens_per_batch = round(tokens_per_contract / total_llm_calls, 2) if total_llm_calls > 0 else 0.0
+            fallback_rate = round((fallback_triggered_count / len(all_batches)) * 100.0, 2) if len(all_batches) > 0 else 0.0
+            recovery_rate = round((recover_succeeded / recover_attempted) * 100.0, 2) if recover_attempted > 0 else 0.0
+            grounding_rate = round((grounded_count / total_params_db) * 100.0, 2) if total_params_db > 0 else 0.0
+
+            logger.info("==================================================")
+            logger.info("📊 EXTRACTION EFFICIENCY AUDIT (Tier P2 Item 11)")
+            logger.info(f"  contract_id:          {contract_id}")
+            logger.info(f"  tokens_per_contract:  {tokens_per_contract}")
+            logger.info(f"  tokens_per_batch:     {tokens_per_batch}")
+            logger.info(f"  fallback_rate:        {fallback_rate}%")
+            logger.info(f"  recovery_rate:        {recovery_rate}%")
+            logger.info(f"  grounding_rate:       {grounding_rate}%")
+            logger.info("==================================================")
+
             # ----------------------------------------------------------------
             # Finalise
             # ----------------------------------------------------------------
@@ -428,6 +467,11 @@ class ExtractionService:
                     "total_params": total_params,
                     "grounded": grounded_count,
                     "validated": validated_count,
+                    "tokens_per_contract": tokens_per_contract,
+                    "tokens_per_batch": tokens_per_batch,
+                    "fallback_rate": fallback_rate,
+                    "recovery_rate": recovery_rate,
+                    "grounding_rate": grounding_rate,
                 },
             )
 
@@ -437,6 +481,11 @@ class ExtractionService:
                 "grounded": grounded_count,
                 "validated": validated_count,
                 "workflow_state": "DRAFT_READY",
+                "tokens_per_contract": tokens_per_contract,
+                "tokens_per_batch": tokens_per_batch,
+                "fallback_rate": fallback_rate,
+                "recovery_rate": recovery_rate,
+                "grounding_rate": grounding_rate,
             }
 
         except Exception as e:
@@ -469,7 +518,9 @@ class ExtractionService:
 
         if not rows:
             logger.info("ℹ Recovery pass skipped: 0 missing or low-confidence parameters detected.")
-            return
+            return 0, 0
+
+        succeeded_count = 0
 
         logger.info(f"🔄 Starting Missing-Field Recovery Pass for {len(rows)} parameters...")
 
@@ -533,9 +584,14 @@ class ExtractionService:
                     recovered_title = recovered_param.get("section_title")
                     recovered_notes = recovered_param.get("notes")
 
+                    # P0 Recovery Gating: Hard rule — if recovered value or supporting text is null/empty, do not recover
+                    if (recovered_val is None or str(recovered_val).strip().lower() in ('null', 'none', '') or
+                        not recovered_text or str(recovered_text).strip().lower() in ('null', 'none', '')):
+                        logger.info(f"ℹ [Recovery Omission] Ignoring null/empty recovery for parameter '{parameter_name}' (conf: {recovered_conf:.2f}).")
+                        continue
+
                     # Confidence Floor Gating (Change D)
-                    # Only accept recovery if recovered.confidence >= 0.40 AND supporting_text exists
-                    if recovered_conf >= 0.40 and recovered_text:
+                    if recovered_conf >= 0.40:
                         # Ensure values are properly serialized to strings to prevent DPY-3002
                         def serialize_db_val(v):
                             if v is None:
@@ -547,6 +603,14 @@ class ExtractionService:
 
                         db_recovered_val = serialize_db_val(recovered_val)
                         db_recovered_text = serialize_db_val(recovered_text)
+
+                        # P0 Verbatim Grounding Verification: Verify recovered_text exists verbatim in retrieved context
+                        if db_recovered_text not in document_text:
+                            logger.warning(
+                                f"❌ [Recovery Rejected] '{parameter_name}' failed verbatim grounding check. "
+                                f"Supporting text not found in context."
+                            )
+                            continue
 
                         # History Preservation (Change C)
                         # Keep history in python logs as notes are not in the DB schema
@@ -581,6 +645,7 @@ class ExtractionService:
                                     "param_id": param_id,
                                 })
                                 await conn.commit()
+                                succeeded_count += 1
                     else:
                         logger.info(
                             f"ℹ [Recovery Floor Rejected] recovered parameter '{parameter_name}' "
@@ -591,6 +656,8 @@ class ExtractionService:
 
             except Exception as e:
                 logger.error(f"❌ Recovery pass failed for parameter '{parameter_name}': {e}")
+
+        return len(rows), succeeded_count
 
     # -------------------------------------------------------------------------
     # Internal helpers
