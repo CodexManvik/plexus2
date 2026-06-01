@@ -13,9 +13,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+async def _read_lob(value: Any) -> Optional[str]:
+    """
+    Oracle python-oracledb returns CLOB/NCLOB columns as AsyncLOB objects.
+    Await .read() to materialise the string before passing to json.loads or
+    any string operation.  Plain strings and None are returned as-is.
+    """
+    if value is None:
+        return None
+    # AsyncLOB exposes a .read() coroutine
+    if hasattr(value, "read"):
+        return await value.read()
+    return value
+
+
 class AuditService:
     """Centralized audit logging for all system actions."""
-    
+
     @staticmethod
     async def log(
         action: str,
@@ -29,7 +43,7 @@ class AuditService:
     ):
         """
         Write audit log entry.
-        
+
         Args:
             action: Action type (e.g., 'PARAMETER_EDITED', 'LOGIN_SUCCESS', 'WORKFLOW_TRANSITION')
             user_id: User performing the action (None for system actions)
@@ -50,7 +64,7 @@ class AuditService:
                 :old_value, :new_value, :metadata
             )
         """
-        
+
         def safe_serialize(obj: Any) -> Optional[str]:
             if obj is None:
                 return None
@@ -74,7 +88,7 @@ class AuditService:
             old_value_str = safe_serialize(old_value)
             new_value_str = safe_serialize(new_value)
             metadata_str = safe_serialize(metadata)
-            
+
             await execute_query(query, {
                 'contract_id': contract_id or None,
                 'user_id': user_id or None,
@@ -86,9 +100,9 @@ class AuditService:
                 'metadata': metadata_str
             })
         except Exception as e:
-            # Audit logging should never break the main flow (P2 Failsafe Isolation)
-            logger.error(f"⚠️ Failsafe isolated: Failed to write audit log: {e}")
-    
+            # Audit logging must never break the main flow
+            logger.error(f"Failsafe isolated: Failed to write audit log: {e}")
+
     @staticmethod
     async def query_logs(
         contract_id: Optional[str] = None,
@@ -102,38 +116,37 @@ class AuditService:
     ) -> list:
         """
         Query audit logs with filters.
-        
         Returns list of audit log entries matching criteria.
         """
         conditions = []
-        params = {}
-        
+        params: dict = {}
+
         if contract_id:
             conditions.append("contract_id = HEXTORAW(:contract_id)")
             params['contract_id'] = contract_id
-        
+
         if user_id:
             conditions.append("user_id = HEXTORAW(:user_id)")
             params['user_id'] = user_id
-        
+
         if action:
             conditions.append("action = :action")
             params['action'] = action
-        
+
         if entity_type:
             conditions.append("entity_type = :entity_type")
             params['entity_type'] = entity_type
-        
+
         if start_date:
             conditions.append("created_at >= :start_date")
             params['start_date'] = start_date
-        
+
         if end_date:
             conditions.append("created_at <= :end_date")
             params['end_date'] = end_date
-        
+
         where_clause = " AND ".join(conditions) if conditions else "1=1"
-        
+
         query = f"""
             SELECT log_id, contract_id, user_id, action, entity_type, entity_id,
                    old_value, new_value, metadata, created_at
@@ -142,37 +155,41 @@ class AuditService:
             ORDER BY created_at DESC
             OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
         """
-        
+
         params['offset'] = offset
         params['limit'] = limit
-        
+
         from ..database import db_pool
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(query, params)
                 rows = await cursor.fetchall()
-                
-                return [
-                    {
-                        'log_id': row[0],
+
+                result = []
+                for row in rows:
+                    # Materialise Oracle AsyncLOB columns before JSON-parsing
+                    old_val  = await _read_lob(row[6])
+                    new_val  = await _read_lob(row[7])
+                    meta_raw = await _read_lob(row[8])
+                    result.append({
+                        'log_id':      row[0],
                         'contract_id': row[1],
-                        'user_id': row[2],
-                        'action': row[3],
+                        'user_id':     row[2],
+                        'action':      row[3],
                         'entity_type': row[4],
-                        'entity_id': row[5],
-                        'old_value': row[6],
-                        'new_value': row[7],
-                        'metadata': json.loads(row[8]) if row[8] else None,
-                        'created_at': row[9]
-                    }
-                    for row in rows
-                ]
-    
+                        'entity_id':   row[5],
+                        'old_value':   old_val,
+                        'new_value':   new_val,
+                        'metadata':    json.loads(meta_raw) if meta_raw else None,
+                        'created_at':  row[9],
+                    })
+                return result
+
     @staticmethod
     async def get_contract_audit_trail(contract_id: str) -> list:
         """Get complete audit trail for a specific contract."""
         return await AuditService.query_logs(contract_id=contract_id, limit=1000)
-    
+
     @staticmethod
     async def get_user_activity(user_id: str, days: int = 30) -> list:
         """Get recent activity for a specific user."""

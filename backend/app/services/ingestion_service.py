@@ -138,8 +138,8 @@ class IngestionService:
     @staticmethod
     async def get_file_path(contract_id: str) -> Optional[str]:
         """Get local file path for a contract."""
-        query = "SELECT oci_object_key FROM contracts WHERE contract_id = :contract_id"
-        
+        query = "SELECT oci_object_key FROM contracts WHERE contract_id = HEXTORAW(:contract_id)"
+
         async with db_pool.get_connection() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(query, {'contract_id': contract_id})

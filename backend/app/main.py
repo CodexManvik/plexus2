@@ -27,6 +27,7 @@ from .routers.assistant import router as assistant_router
 from .routers.audit import router as audit_router
 from .routers.admin import router as admin_router
 from .routers.websocket import router as ws_router
+from .routers.queue import router as queue_router
 
 # Configure logging
 logging.basicConfig(
@@ -222,6 +223,7 @@ app.include_router(assistant_router)
 app.include_router(audit_router)
 app.include_router(admin_router)
 app.include_router(ws_router)
+app.include_router(queue_router)
 
 
 if __name__ == "__main__":
