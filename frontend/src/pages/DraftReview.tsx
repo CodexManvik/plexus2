@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
-import PDFViewer from '../components/pdf/PDFViewer';
+import DocumentViewer from '../components/pdf/DocumentViewer';
 
 interface Grounding {
   page_number: number;
@@ -178,17 +178,17 @@ export default function DraftReview() {
           <div className="flex items-center gap-sm">
             <span className="material-symbols-outlined text-primary text-md">description</span>
             <span className="text-xs font-semibold tracking-wide text-primary truncate max-w-[220px]">
-              {contractData?.filename || 'contract_preview.pdf'}
+              {contractData?.filename || 'contract.pdf'}
             </span>
             <span className="flex items-center gap-1.5 px-2 py-0.5 bg-primary-fixed text-primary text-[9px] font-extrabold rounded-full border border-primary/10">
-              OCR Grounded
+              {contractData?.filename?.endsWith('.docx') ? 'DOCX' : contractData?.filename?.endsWith('.xlsx') ? 'XLSX' : 'PDF'}
             </span>
           </div>
           <span className="text-[10px] font-bold text-slate-400 font-mono tracking-widest uppercase">Viewer v2.0</span>
         </div>
         
         {contractId && (
-          <PDFViewer
+          <DocumentViewer
             contractId={contractId}
             activeParamId={activeParamId}
             parameters={parameters}

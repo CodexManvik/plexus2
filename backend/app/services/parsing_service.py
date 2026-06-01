@@ -113,11 +113,12 @@ class ParsingService:
             if blocks_to_insert:
                 await ParsingService._insert_blocks_bulk(contract_id, blocks_to_insert)
 
+            num_pages = len(doc)  # capture before close() invalidates the object
             doc.close()
-            logger.info(f"Parsed PDF: {blocks_created} blocks from {len(doc)} pages")
+            logger.info(f"Parsed PDF: {blocks_created} blocks from {num_pages} pages")
 
             # Update contract page count
-            await ParsingService._update_page_count(contract_id, len(doc))
+            await ParsingService._update_page_count(contract_id, num_pages)
 
             return blocks_created
 
